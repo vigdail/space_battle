@@ -1,0 +1,18 @@
+[package]
+edition = "2021"
+name = "space_battle"
+version = "0.1.0"
+
+[features]
+debug = ["game_plugin/debug", "bevy-inspector-egui"]
+default = ["debug"]
+
+[dependencies]
+bevy = "0.6"
+bevy-inspector-egui = {version = "0.8.2", optional = true}
+game_plugin = {path = "game_plugin"}
+
+[workspace]
+members = [
+  "game_plugin",
+]

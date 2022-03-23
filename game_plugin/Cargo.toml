@@ -1,0 +1,14 @@
+[package]
+edition = "2021"
+name = "game_plugin"
+version = "0.1.0"
+
+[features]
+debug = ["bevy-inspector-egui"]
+default = []
+
+[dependencies]
+bevy = "0.6"
+bevy-inspector-egui = {version = "0.8.2", optional = true}
+rand = "0.8.5"
+serde = "1.0.136"
