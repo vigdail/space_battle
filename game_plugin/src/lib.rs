@@ -1,19 +1,27 @@
 mod components;
+mod resources;
 mod systems;
 
 use bevy::prelude::*;
 use bevy_inspector_egui::RegisterInspectable;
 use components::{Player, Velocity};
-use systems::moving_system;
+use resources::InputAxis;
+use systems::{input_system, moving_system, player_move_system};
 
 pub struct GamePlugin;
 
 impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
         app.register_inspectable::<Direction>()
+            .insert_resource(InputAxis {
+                horizontal: 0.0,
+                vertical: 0.0,
+            })
             .add_startup_system(spawn_player)
             .add_startup_system(spawn_camera)
-            .add_system(moving_system);
+            .add_system(moving_system)
+            .add_system(input_system)
+            .add_system(player_move_system);
     }
 }
 

@@ -1,5 +1,8 @@
 use bevy::prelude::*;
+
+#[cfg(feature = "debug")]
 use bevy_inspector_egui::WorldInspectorPlugin;
+
 use game_plugin::GamePlugin;
 
 fn main() {
