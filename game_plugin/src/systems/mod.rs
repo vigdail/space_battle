@@ -1,47 +1,29 @@
 use bevy::prelude::*;
-
-use crate::{
-    components::{Player, Velocity},
-    resources::InputAxis,
+use bevy_rapier2d::{
+    na::Vector2, physics::RapierConfiguration, prelude::RigidBodyVelocityComponent,
 };
 
-pub fn moving_system(time: Res<Time>, mut query: Query<(&mut Transform, &Velocity)>) {
-    for (mut transform, velocity) in query.iter_mut() {
-        transform.translation += velocity.0 * time.delta_seconds();
-    }
-}
+use crate::components::Player;
 
-pub fn input_system(keys: Res<Input<KeyCode>>, mut axis: ResMut<InputAxis>) {
-    axis.vertical = 0.0;
-    axis.horizontal = 0.0;
-    if keys.pressed(KeyCode::W) {
-        axis.vertical -= 1.0;
-    }
-    if keys.pressed(KeyCode::S) {
-        axis.vertical += 1.0;
-    }
-    if keys.pressed(KeyCode::A) {
-        axis.horizontal -= 1.0;
-    }
-    if keys.pressed(KeyCode::D) {
-        axis.horizontal += 1.0;
-    }
-}
-
-pub fn player_move_system(
-    mut commands: Commands,
-    mut players: Query<Entity, With<Player>>,
-    axis: ResMut<InputAxis>,
+pub fn player_movement(
+    keyboard_input: Res<Input<KeyCode>>,
+    rapier_parameters: Res<RapierConfiguration>,
+    mut player_info: Query<(&Player, &mut RigidBodyVelocityComponent)>,
 ) {
-    let velocity = Vec2::new(axis.horizontal, -axis.vertical);
-    let velocity = if velocity.length_squared() > 0.0 {
-        velocity.normalize() * 50.0
-    } else {
-        velocity
-    };
-    for player in players.iter_mut() {
-        commands
-            .entity(player)
-            .insert(Velocity(velocity.extend(0.0)));
+    for (player, mut rb_vels) in player_info.iter_mut() {
+        let up = keyboard_input.pressed(KeyCode::W) || keyboard_input.pressed(KeyCode::Up);
+        let down = keyboard_input.pressed(KeyCode::S) || keyboard_input.pressed(KeyCode::Down);
+        let left = keyboard_input.pressed(KeyCode::A) || keyboard_input.pressed(KeyCode::Left);
+        let right = keyboard_input.pressed(KeyCode::D) || keyboard_input.pressed(KeyCode::Right);
+
+        let x_axis = -(left as i8) + right as i8;
+        let y_axis = -(down as i8) + up as i8;
+
+        let mut move_delta: Vector2<_> = [x_axis as f32, y_axis as f32].into();
+        if move_delta != Vector2::zeros() {
+            move_delta /= move_delta.magnitude() * rapier_parameters.scale;
+        }
+
+        rb_vels.linvel = move_delta * player.speed;
     }
 }

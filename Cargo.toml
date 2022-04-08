@@ -10,6 +10,7 @@ default = ["debug"]
 [dependencies]
 bevy = { version = "0.6.1", features = ["dynamic"] }
 bevy-inspector-egui = {version = "0.8.2", optional = true}
+bevy_rapier2d = "0.12.1"
 game_plugin = {path = "game_plugin"}
 
 [workspace]
