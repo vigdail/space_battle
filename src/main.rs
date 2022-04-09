@@ -2,7 +2,10 @@ use bevy::prelude::*;
 
 #[cfg(feature = "debug")]
 use bevy_inspector_egui::WorldInspectorPlugin;
-use bevy_rapier2d::physics::{NoUserData, RapierConfiguration, RapierPhysicsPlugin};
+use bevy_rapier2d::{
+    physics::{NoUserData, RapierConfiguration, RapierPhysicsPlugin},
+    render::RapierRenderPlugin,
+};
 use game_plugin::GamePlugin;
 
 fn main() {
@@ -20,7 +23,8 @@ fn main() {
     })
     .add_plugins(DefaultPlugins);
     #[cfg(feature = "debug")]
-    app.add_plugin(WorldInspectorPlugin::default());
+    app.add_plugin(WorldInspectorPlugin::default())
+        .add_plugin(RapierRenderPlugin);
     app.add_plugin(RapierPhysicsPlugin::<NoUserData>::default())
         .add_plugin(GamePlugin)
         .run();

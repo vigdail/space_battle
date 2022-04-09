@@ -10,7 +10,7 @@ pub fn player_movement(
     rapier_parameters: Res<RapierConfiguration>,
     mut player_info: Query<(&Player, &mut RigidBodyVelocityComponent)>,
 ) {
-    for (player, mut rb_vels) in player_info.iter_mut() {
+    for (player, mut vels) in player_info.iter_mut() {
         let up = keyboard_input.pressed(KeyCode::W) || keyboard_input.pressed(KeyCode::Up);
         let down = keyboard_input.pressed(KeyCode::S) || keyboard_input.pressed(KeyCode::Down);
         let left = keyboard_input.pressed(KeyCode::A) || keyboard_input.pressed(KeyCode::Left);
@@ -24,6 +24,6 @@ pub fn player_movement(
             move_delta /= move_delta.magnitude() * rapier_parameters.scale;
         }
 
-        rb_vels.linvel = move_delta * player.speed;
+        vels.linvel = move_delta * player.speed;
     }
 }
