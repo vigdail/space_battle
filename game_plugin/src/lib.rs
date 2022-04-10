@@ -10,18 +10,34 @@ use bevy_rapier2d::{
     },
     render::ColliderDebugRender,
 };
-use components::Player;
-use systems::player_movement;
+use components::{EquipWeaponEvent, Player, Weapon, WeaponSlot, WeaponSlots};
+use systems::{
+    despawning, equip_weapon, player_movement, player_shoot, test_equip_weapon,
+    update_despawn_timers,
+};
 
 pub struct GamePlugin;
 
 impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
         app.register_inspectable::<Player>()
+            .register_inspectable::<Weapon>()
+            .register_inspectable::<WeaponSlot>()
+            .register_inspectable::<WeaponSlots>()
+            .add_event::<EquipWeaponEvent>()
             .add_startup_system(spawn_player)
             .add_startup_system(spawn_bounds)
             .add_startup_system(spawn_camera)
-            .add_system(player_movement);
+            .add_system(player_movement)
+            .add_system(player_shoot)
+            .add_system(equip_weapon)
+            .add_system(update_despawn_timers)
+            .add_system(despawning)
+            .add_system(test_equip_weapon);
+    }
+
+    fn name(&self) -> &str {
+        std::any::type_name::<Self>()
     }
 }
 
@@ -56,7 +72,23 @@ fn spawn_player(mut commands: Commands, rapier_config: Res<RapierConfiguration>)
         })
         .insert(ColliderPositionSync::Discrete)
         .insert(Player { speed: 200.0 })
-        .insert(Name::new("Player"));
+        .insert(Name::new("Player"))
+        .insert(WeaponSlots {
+            weapons: vec![
+                WeaponSlot {
+                    weapon: None,
+                    position: Vec2::new(0.0, 20.0),
+                },
+                WeaponSlot {
+                    weapon: None,
+                    position: Vec2::new(-15.0, 20.0),
+                },
+                WeaponSlot {
+                    weapon: None,
+                    position: Vec2::new(15.0, 20.0),
+                },
+            ],
+        });
 }
 
 fn spawn_bounds(
