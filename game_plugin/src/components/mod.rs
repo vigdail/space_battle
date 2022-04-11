@@ -61,3 +61,7 @@ pub struct EquipWeaponEvent {
     pub weapon_entity: Entity,
     pub slot_index: usize,
 }
+
+pub enum Contact {
+    HealthBullet(Entity, Entity),
+}

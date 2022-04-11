@@ -11,10 +11,12 @@ use bevy_rapier2d::{
     },
     render::ColliderDebugRender,
 };
-use components::{EquipWeaponEvent, Health, Owner, Player, Weapon, WeaponSlot, WeaponSlots};
+use components::{
+    Contact, EquipWeaponEvent, Health, Owner, Player, Weapon, WeaponSlot, WeaponSlots,
+};
 use systems::{
-    despawn_dead, equip_weapon, player_movement, player_shoot, print_intersections,
-    test_equip_weapon, track_lifetime,
+    despawn_dead, equip_weapon, handle_contacts, handle_intersections, player_movement,
+    player_shoot, test_equip_weapon, track_lifetime,
 };
 
 pub struct GamePlugin;
@@ -28,6 +30,7 @@ impl Plugin for GamePlugin {
             .register_inspectable::<Owner>()
             .register_inspectable::<Health>()
             .add_event::<EquipWeaponEvent>()
+            .add_event::<Contact>()
             .add_startup_system(spawn_player)
             .add_startup_system(spawn_enemy)
             .add_startup_system(spawn_bounds)
@@ -36,7 +39,8 @@ impl Plugin for GamePlugin {
             .add_system(player_shoot)
             .add_system(equip_weapon)
             .add_system(track_lifetime)
-            .add_system(print_intersections)
+            .add_system(handle_intersections)
+            .add_system(handle_contacts)
             .add_system(despawn_dead)
             .add_system(test_equip_weapon);
     }
@@ -77,6 +81,7 @@ fn spawn_player(mut commands: Commands, rapier_config: Res<RapierConfiguration>)
         })
         .insert(ColliderPositionSync::Discrete)
         .insert(Player { speed: 200.0 })
+        .insert(Health::new(1.0))
         .insert(Name::new("Player"))
         .insert(WeaponSlots {
             weapons: vec![

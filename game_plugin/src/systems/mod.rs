@@ -11,7 +11,7 @@ use bevy_rapier2d::{
 };
 
 use crate::components::{
-    Bullet, EquipWeaponEvent, Health, Lifetime, Owner, Player, Weapon, WeaponSlots,
+    Bullet, Contact, EquipWeaponEvent, Health, Lifetime, Owner, Player, Weapon, WeaponSlots,
 };
 
 pub fn player_movement(
@@ -118,40 +118,49 @@ pub fn track_lifetime(
     }
 }
 
-pub fn print_intersections(
-    mut commands: Commands,
+pub fn handle_intersections(
     mut intersection_events: EventReader<IntersectionEvent>,
-    bullets: Query<(&Bullet, &Owner)>,
-    mut healths: Query<&mut Health>,
+    bullets: Query<&Bullet>,
+    healths: Query<&Health>,
+    owners: Query<&Owner>,
+    mut contact_events: EventWriter<Contact>,
 ) {
-    for event in intersection_events.iter() {
-        if !event.intersecting {
-            continue;
-        }
+    for event in intersection_events.iter().filter(|e| e.intersecting) {
         let entity1 = event.collider1.entity();
         let entity2 = event.collider2.entity();
-        match (bullets.get(entity1), healths.get_mut(entity2)) {
-            (Ok((bullet, owner)), Ok(mut health)) => {
-                if owner.entity == entity2 {
-                    continue;
+
+        let mut check_bullet = |health_entity, bullet_entity| {
+            if healths.get(health_entity).is_ok() && bullets.get(bullet_entity).is_ok() {
+                let is_owner = owners
+                    .get(bullet_entity)
+                    .map(|owner| owner.entity == health_entity)
+                    .unwrap_or(false);
+
+                if !is_owner {
+                    contact_events.send(Contact::HealthBullet(health_entity, bullet_entity));
                 }
-
-                health.current -= bullet.damage;
-                commands.entity(entity1).despawn();
             }
-            _ => {}
-        }
+        };
 
-        match (bullets.get(entity2), healths.get_mut(entity1)) {
-            (Ok((bullet, owner)), Ok(mut health)) => {
-                if owner.entity == entity1 {
-                    continue;
-                }
+        check_bullet(entity1, entity2);
+        check_bullet(entity2, entity1);
+    }
+}
 
+pub fn handle_contacts(
+    mut commands: Commands,
+    mut events: EventReader<Contact>,
+    mut healths: Query<&mut Health>,
+    bullets: Query<&Bullet>,
+) {
+    for event in events.iter() {
+        match *event {
+            Contact::HealthBullet(health_entity, bullet_entity) => {
+                let mut health = healths.get_mut(health_entity).unwrap();
+                let bullet = bullets.get(bullet_entity).unwrap();
+                commands.entity(bullet_entity).despawn();
                 health.current -= bullet.damage;
-                commands.entity(entity2).despawn();
             }
-            _ => {}
         }
     }
 }
