@@ -12,7 +12,7 @@ use bevy_rapier2d::{
     render::ColliderDebugRender,
 };
 use components::{
-    Contact, EquipWeaponEvent, Health, Owner, Player, Weapon, WeaponSlot, WeaponSlots,
+    Bullet, Contact, EquipWeaponEvent, Health, Owner, Player, Weapon, WeaponSlot, WeaponSlots,
 };
 use systems::{
     despawn_dead, equip_weapon, handle_contacts, handle_intersections, player_movement,
@@ -27,6 +27,7 @@ impl Plugin for GamePlugin {
             .register_inspectable::<Weapon>()
             .register_inspectable::<WeaponSlot>()
             .register_inspectable::<WeaponSlots>()
+            .register_inspectable::<Bullet>()
             .register_inspectable::<Owner>()
             .register_inspectable::<Health>()
             .add_event::<EquipWeaponEvent>()
