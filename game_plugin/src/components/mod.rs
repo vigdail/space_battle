@@ -16,8 +16,32 @@ pub struct Bullet {
     pub damage: f32,
 }
 
+#[derive(Component, Inspectable)]
+pub struct Owner {
+    pub entity: Entity,
+}
+
+#[derive(Component, Inspectable)]
+pub struct Health {
+    pub current: f32,
+    pub max: f32,
+}
+
+impl Health {
+    pub fn new(amount: f32) -> Self {
+        Self {
+            current: amount,
+            max: amount,
+        }
+    }
+
+    pub fn is_dead(&self) -> bool {
+        self.current == 0.0
+    }
+}
+
 #[derive(Component)]
-pub struct DespawnTimer {
+pub struct Lifetime {
     pub timer: Timer,
 }
 

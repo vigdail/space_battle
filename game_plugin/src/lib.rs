@@ -6,14 +6,15 @@ use bevy_inspector_egui::RegisterInspectable;
 use bevy_rapier2d::{
     physics::{ColliderBundle, ColliderPositionSync, RapierConfiguration, RigidBodyBundle},
     prelude::{
-        ColliderMaterial, ColliderShape, RigidBodyMassProps, RigidBodyMassPropsFlags, RigidBodyType,
+        ActiveEvents, ColliderMaterial, ColliderShape, RigidBodyForces, RigidBodyMassProps,
+        RigidBodyMassPropsFlags, RigidBodyType,
     },
     render::ColliderDebugRender,
 };
-use components::{EquipWeaponEvent, Player, Weapon, WeaponSlot, WeaponSlots};
+use components::{EquipWeaponEvent, Health, Owner, Player, Weapon, WeaponSlot, WeaponSlots};
 use systems::{
-    despawning, equip_weapon, player_movement, player_shoot, test_equip_weapon,
-    update_despawn_timers,
+    equip_weapon, player_movement, player_shoot, print_intersections, test_equip_weapon,
+    track_lifetime,
 };
 
 pub struct GamePlugin;
@@ -24,15 +25,18 @@ impl Plugin for GamePlugin {
             .register_inspectable::<Weapon>()
             .register_inspectable::<WeaponSlot>()
             .register_inspectable::<WeaponSlots>()
+            .register_inspectable::<Owner>()
+            .register_inspectable::<Health>()
             .add_event::<EquipWeaponEvent>()
             .add_startup_system(spawn_player)
+            .add_startup_system(spawn_enemy)
             .add_startup_system(spawn_bounds)
             .add_startup_system(spawn_camera)
             .add_system(player_movement)
             .add_system(player_shoot)
             .add_system(equip_weapon)
-            .add_system(update_despawn_timers)
-            .add_system(despawning)
+            .add_system(track_lifetime)
+            .add_system(print_intersections)
             .add_system(test_equip_weapon);
     }
 
@@ -89,6 +93,46 @@ fn spawn_player(mut commands: Commands, rapier_config: Res<RapierConfiguration>)
                 },
             ],
         });
+}
+
+fn spawn_enemy(mut commands: Commands, rapier_config: Res<RapierConfiguration>) {
+    let size = Vec2::splat(32.0);
+    let collider_size = size / rapier_config.scale;
+    commands
+        .spawn_bundle(SpriteBundle {
+            sprite: Sprite {
+                color: Color::OLIVE,
+                custom_size: Some(size),
+                ..Default::default()
+            },
+            ..Default::default()
+        })
+        .insert_bundle(ColliderBundle {
+            shape: ColliderShape::cuboid(collider_size.x / 2.0, collider_size.y / 2.0).into(),
+            material: ColliderMaterial {
+                friction: 0.0,
+                ..Default::default()
+            }
+            .into(),
+            flags: (ActiveEvents::INTERSECTION_EVENTS).into(),
+            ..Default::default()
+        })
+        .insert_bundle(RigidBodyBundle {
+            mass_properties: RigidBodyMassProps {
+                flags: RigidBodyMassPropsFlags::ROTATION_LOCKED,
+                ..Default::default()
+            }
+            .into(),
+            position: [0.0, 150.0].into(),
+            forces: RigidBodyForces {
+                gravity_scale: 0.0,
+                ..Default::default()
+            }
+            .into(),
+            ..Default::default()
+        })
+        .insert(ColliderPositionSync::Discrete)
+        .insert(Name::new("Enemy"));
 }
 
 fn spawn_bounds(
