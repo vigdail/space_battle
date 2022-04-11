@@ -1,8 +1,8 @@
-mod components;
-mod systems;
+mod combat;
+mod player;
 
 use bevy::prelude::*;
-use bevy_inspector_egui::RegisterInspectable;
+use bevy_inspector_egui::{Inspectable, RegisterInspectable};
 use bevy_rapier2d::{
     physics::{ColliderBundle, ColliderPositionSync, RapierConfiguration, RigidBodyBundle},
     prelude::{
@@ -11,95 +11,35 @@ use bevy_rapier2d::{
     },
     render::ColliderDebugRender,
 };
-use components::{
-    Bullet, Contact, EquipWeaponEvent, Health, Owner, Player, Weapon, WeaponSlot, WeaponSlots,
-};
-use systems::{
-    despawn_dead, equip_weapon, handle_contacts, handle_intersections, player_movement,
-    player_shoot, test_equip_weapon, track_lifetime,
-};
+use combat::{CombatPlugin, Health};
+use player::PlayerPlugin;
+
+#[derive(Component, Inspectable)]
+pub struct Owner {
+    pub entity: Entity,
+}
+
+#[derive(Component)]
+pub struct Lifetime {
+    pub timer: Timer,
+}
 
 pub struct GamePlugin;
 
 impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
-        app.register_inspectable::<Player>()
-            .register_inspectable::<Weapon>()
-            .register_inspectable::<WeaponSlot>()
-            .register_inspectable::<WeaponSlots>()
-            .register_inspectable::<Bullet>()
-            .register_inspectable::<Owner>()
-            .register_inspectable::<Health>()
-            .add_event::<EquipWeaponEvent>()
-            .add_event::<Contact>()
-            .add_startup_system(spawn_player)
+        app.register_inspectable::<Owner>()
+            .add_plugin(PlayerPlugin)
+            .add_plugin(CombatPlugin)
             .add_startup_system(spawn_enemy)
             .add_startup_system(spawn_bounds)
             .add_startup_system(spawn_camera)
-            .add_system(player_movement)
-            .add_system(player_shoot)
-            .add_system(equip_weapon)
-            .add_system(track_lifetime)
-            .add_system(handle_intersections)
-            .add_system(handle_contacts)
-            .add_system(despawn_dead)
-            .add_system(test_equip_weapon);
+            .add_system(track_lifetime);
     }
 
     fn name(&self) -> &str {
         std::any::type_name::<Self>()
     }
-}
-
-fn spawn_player(mut commands: Commands, rapier_config: Res<RapierConfiguration>) {
-    let player_size = Vec2::splat(32.0);
-    let collider_size = player_size / rapier_config.scale;
-    commands
-        .spawn_bundle(SpriteBundle {
-            sprite: Sprite {
-                color: Color::RED,
-                custom_size: Some(player_size),
-                ..Default::default()
-            },
-            ..Default::default()
-        })
-        .insert_bundle(ColliderBundle {
-            shape: ColliderShape::cuboid(collider_size.x / 2.0, collider_size.y / 2.0).into(),
-            material: ColliderMaterial {
-                friction: 0.0,
-                ..Default::default()
-            }
-            .into(),
-            ..Default::default()
-        })
-        .insert_bundle(RigidBodyBundle {
-            mass_properties: RigidBodyMassProps {
-                flags: RigidBodyMassPropsFlags::ROTATION_LOCKED,
-                ..Default::default()
-            }
-            .into(),
-            ..Default::default()
-        })
-        .insert(ColliderPositionSync::Discrete)
-        .insert(Player { speed: 200.0 })
-        .insert(Health::new(1.0))
-        .insert(Name::new("Player"))
-        .insert(WeaponSlots {
-            weapons: vec![
-                WeaponSlot {
-                    weapon: None,
-                    position: Vec2::new(0.0, 20.0),
-                },
-                WeaponSlot {
-                    weapon: None,
-                    position: Vec2::new(-15.0, 20.0),
-                },
-                WeaponSlot {
-                    weapon: None,
-                    position: Vec2::new(15.0, 20.0),
-                },
-            ],
-        });
 }
 
 fn spawn_enemy(mut commands: Commands, rapier_config: Res<RapierConfiguration>) {
@@ -186,4 +126,16 @@ fn spawn_bounds(
 
 fn spawn_camera(mut commands: Commands) {
     commands.spawn_bundle(OrthographicCameraBundle::new_2d());
+}
+
+pub fn track_lifetime(
+    mut cmd: Commands,
+    mut query: Query<(Entity, &mut Lifetime)>,
+    time: ResMut<Time>,
+) {
+    for (entity, mut lifetime) in query.iter_mut() {
+        if lifetime.timer.tick(time.delta()).just_finished() {
+            cmd.entity(entity).despawn();
+        }
+    }
 }
