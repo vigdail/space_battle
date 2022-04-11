@@ -10,7 +10,9 @@ use bevy_rapier2d::{
     },
 };
 
-use crate::components::{Bullet, EquipWeaponEvent, Lifetime, Owner, Player, Weapon, WeaponSlots};
+use crate::components::{
+    Bullet, EquipWeaponEvent, Health, Lifetime, Owner, Player, Weapon, WeaponSlots,
+};
 
 pub fn player_movement(
     keyboard_input: Res<Input<KeyCode>>,
@@ -116,14 +118,49 @@ pub fn track_lifetime(
     }
 }
 
-pub fn print_intersections(mut intersection_events: EventReader<IntersectionEvent>) {
+pub fn print_intersections(
+    mut commands: Commands,
+    mut intersection_events: EventReader<IntersectionEvent>,
+    bullets: Query<(&Bullet, &Owner)>,
+    mut healths: Query<&mut Health>,
+) {
     for event in intersection_events.iter() {
+        if !event.intersecting {
+            continue;
+        }
         let entity1 = event.collider1.entity();
         let entity2 = event.collider2.entity();
-        println!(
-            "Received intersection event: {:?}, bettween {:?} and {:?}",
-            event, entity1, entity2
-        );
+        match (bullets.get(entity1), healths.get_mut(entity2)) {
+            (Ok((bullet, owner)), Ok(mut health)) => {
+                if owner.entity == entity2 {
+                    continue;
+                }
+
+                health.current -= bullet.damage;
+                commands.entity(entity1).despawn();
+            }
+            _ => {}
+        }
+
+        match (bullets.get(entity2), healths.get_mut(entity1)) {
+            (Ok((bullet, owner)), Ok(mut health)) => {
+                if owner.entity == entity1 {
+                    continue;
+                }
+
+                health.current -= bullet.damage;
+                commands.entity(entity2).despawn();
+            }
+            _ => {}
+        }
+    }
+}
+
+pub fn despawn_dead(mut commands: Commands, healths: Query<(Entity, &Health), Changed<Health>>) {
+    for (entity, health) in healths.iter() {
+        if health.is_dead() {
+            commands.entity(entity).despawn();
+        }
     }
 }
 

@@ -13,8 +13,8 @@ use bevy_rapier2d::{
 };
 use components::{EquipWeaponEvent, Health, Owner, Player, Weapon, WeaponSlot, WeaponSlots};
 use systems::{
-    equip_weapon, player_movement, player_shoot, print_intersections, test_equip_weapon,
-    track_lifetime,
+    despawn_dead, equip_weapon, player_movement, player_shoot, print_intersections,
+    test_equip_weapon, track_lifetime,
 };
 
 pub struct GamePlugin;
@@ -37,6 +37,7 @@ impl Plugin for GamePlugin {
             .add_system(equip_weapon)
             .add_system(track_lifetime)
             .add_system(print_intersections)
+            .add_system(despawn_dead)
             .add_system(test_equip_weapon);
     }
 
@@ -132,6 +133,7 @@ fn spawn_enemy(mut commands: Commands, rapier_config: Res<RapierConfiguration>) 
             ..Default::default()
         })
         .insert(ColliderPositionSync::Discrete)
+        .insert(Health::new(3.0))
         .insert(Name::new("Enemy"));
 }
 
