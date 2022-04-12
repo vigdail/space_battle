@@ -4,15 +4,60 @@ use bevy_rapier2d::{
     physics::{ColliderBundle, RapierConfiguration, RigidBodyBundle, RigidBodyPositionSync},
     prelude::{
         ActiveEvents, ColliderMaterial, ColliderShape, RigidBodyMassProps, RigidBodyMassPropsFlags,
-        RigidBodyType,
+        RigidBodyType, RigidBodyVelocityComponent,
     },
 };
 use rand::prelude::random;
 
-use crate::combat::Health;
+use crate::{combat::Health, player::Player};
 
 #[derive(Component, Inspectable)]
 pub struct Enemy;
+
+#[derive(Inspectable)]
+pub enum Dir {
+    Left,
+    Right,
+}
+
+impl Dir {
+    pub fn as_f32(&self) -> f32 {
+        match self {
+            Dir::Left => -1.0,
+            Dir::Right => 1.0,
+        }
+    }
+}
+
+impl Default for Dir {
+    fn default() -> Self {
+        Self::Left
+    }
+}
+
+#[derive(Component, Inspectable)]
+pub enum Movement {
+    Static,
+    Horizontal {
+        min: f32,
+        max: f32,
+        current_dir: Dir,
+    },
+    Chase {
+        target: Option<Entity>,
+    },
+    Circle {
+        center: Vec2,
+        radius: f32,
+        current_angle: f32,
+    },
+}
+
+impl Default for Movement {
+    fn default() -> Self {
+        Self::Static
+    }
+}
 
 pub struct SpawnEnemyEvent;
 
@@ -23,9 +68,12 @@ pub struct EnemyPlugin;
 impl Plugin for EnemyPlugin {
     fn build(&self, app: &mut App) {
         app.register_inspectable::<Enemy>()
+            .register_inspectable::<Dir>()
+            .register_inspectable::<Movement>()
             .add_event::<SpawnEnemyEvent>()
             .add_system(count_enemies.label(COUNT_ENEMIES_LABEL))
-            .add_system(spawn_enemy.after(COUNT_ENEMIES_LABEL));
+            .add_system(spawn_enemy.after(COUNT_ENEMIES_LABEL))
+            .add_system(movement);
     }
 }
 
@@ -83,10 +131,42 @@ fn spawn_enemy(
             .insert(RigidBodyPositionSync::Discrete)
             .insert(Health::new(3.0))
             .insert(Enemy)
+            .insert(Movement::Horizontal {
+                min: -random::<f32>() * 350.0,
+                max: random::<f32>() * 350.0,
+                current_dir: Dir::Left,
+            })
             .insert(Name::new("Enemy"));
     };
 
     for _ in events.iter() {
         spawn();
+    }
+}
+
+fn movement(
+    mut enemies: Query<
+        (&mut Movement, &Transform, &mut RigidBodyVelocityComponent),
+        Without<Player>,
+    >,
+) {
+    for (mut movement, transform, mut velocity) in enemies.iter_mut() {
+        match *movement {
+            Movement::Horizontal {
+                min,
+                max,
+                ref mut current_dir,
+            } => {
+                if transform.translation.x <= min {
+                    *current_dir = Dir::Right;
+                } else if transform.translation.x >= max {
+                    *current_dir = Dir::Left;
+                }
+                velocity.linvel.x = current_dir.as_f32() * 100.0;
+            }
+            Movement::Chase { .. } => todo!(),
+            Movement::Circle { .. } => todo!(),
+            Movement::Static => {}
+        }
     }
 }
