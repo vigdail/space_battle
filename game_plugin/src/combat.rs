@@ -111,10 +111,14 @@ pub fn handle_contacts(
     for event in events.iter() {
         match *event {
             Contact::HealthBullet(health_entity, bullet_entity) => {
-                let mut health = healths.get_mut(health_entity).unwrap();
-                let bullet = bullets.get(bullet_entity).unwrap();
+                if let Some((mut health, bullet)) = healths
+                    .get_mut(health_entity)
+                    .ok()
+                    .zip(bullets.get(bullet_entity).ok())
+                {
+                    health.current -= bullet.damage;
+                }
                 commands.entity(bullet_entity).despawn();
-                health.current -= bullet.damage;
             }
         }
     }

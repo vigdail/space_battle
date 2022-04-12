@@ -1,17 +1,16 @@
 mod combat;
+mod enemy;
 mod player;
 
 use bevy::prelude::*;
 use bevy_inspector_egui::{Inspectable, RegisterInspectable};
 use bevy_rapier2d::{
     physics::{ColliderBundle, ColliderPositionSync, RapierConfiguration, RigidBodyBundle},
-    prelude::{
-        ActiveEvents, ColliderMaterial, ColliderShape, RigidBodyForces, RigidBodyMassProps,
-        RigidBodyMassPropsFlags, RigidBodyType,
-    },
+    prelude::{ColliderMaterial, ColliderShape, RigidBodyType},
     render::ColliderDebugRender,
 };
-use combat::{CombatPlugin, Health};
+use combat::CombatPlugin;
+use enemy::EnemyPlugin;
 use player::PlayerPlugin;
 
 #[derive(Component, Inspectable)]
@@ -31,7 +30,7 @@ impl Plugin for GamePlugin {
         app.register_inspectable::<Owner>()
             .add_plugin(PlayerPlugin)
             .add_plugin(CombatPlugin)
-            .add_startup_system(spawn_enemy)
+            .add_plugin(EnemyPlugin)
             .add_startup_system(spawn_bounds)
             .add_startup_system(spawn_camera)
             .add_system(track_lifetime);
@@ -40,47 +39,6 @@ impl Plugin for GamePlugin {
     fn name(&self) -> &str {
         std::any::type_name::<Self>()
     }
-}
-
-fn spawn_enemy(mut commands: Commands, rapier_config: Res<RapierConfiguration>) {
-    let size = Vec2::splat(32.0);
-    let collider_size = size / rapier_config.scale;
-    commands
-        .spawn_bundle(SpriteBundle {
-            sprite: Sprite {
-                color: Color::OLIVE,
-                custom_size: Some(size),
-                ..Default::default()
-            },
-            ..Default::default()
-        })
-        .insert_bundle(ColliderBundle {
-            shape: ColliderShape::cuboid(collider_size.x / 2.0, collider_size.y / 2.0).into(),
-            material: ColliderMaterial {
-                friction: 0.0,
-                ..Default::default()
-            }
-            .into(),
-            flags: (ActiveEvents::INTERSECTION_EVENTS).into(),
-            ..Default::default()
-        })
-        .insert_bundle(RigidBodyBundle {
-            mass_properties: RigidBodyMassProps {
-                flags: RigidBodyMassPropsFlags::ROTATION_LOCKED,
-                ..Default::default()
-            }
-            .into(),
-            position: [0.0, 150.0].into(),
-            forces: RigidBodyForces {
-                gravity_scale: 0.0,
-                ..Default::default()
-            }
-            .into(),
-            ..Default::default()
-        })
-        .insert(ColliderPositionSync::Discrete)
-        .insert(Health::new(3.0))
-        .insert(Name::new("Enemy"));
 }
 
 fn spawn_bounds(
