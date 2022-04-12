@@ -16,18 +16,20 @@ pub struct Enemy;
 
 pub struct SpawnEnemyEvent;
 
+const COUNT_ENEMIES_LABEL: &str = "count_enemies";
+
 pub struct EnemyPlugin;
 
 impl Plugin for EnemyPlugin {
     fn build(&self, app: &mut App) {
         app.register_inspectable::<Enemy>()
             .add_event::<SpawnEnemyEvent>()
-            .add_system(enemy_spawner.label("enemy_count"))
-            .add_system(spawn_enemy.after("enemy_count"));
+            .add_system(count_enemies.label(COUNT_ENEMIES_LABEL))
+            .add_system(spawn_enemy.after(COUNT_ENEMIES_LABEL));
     }
 }
 
-fn enemy_spawner(mut events: EventWriter<SpawnEnemyEvent>, enemies: Query<&Enemy>) {
+fn count_enemies(mut events: EventWriter<SpawnEnemyEvent>, enemies: Query<&Enemy>) {
     let enemy_count = enemies.iter().count();
     if enemy_count < 3 {
         for _ in 0..(3 - enemy_count) {
