@@ -4,7 +4,7 @@ use bevy_rapier2d::{
     physics::{ColliderBundle, RapierConfiguration, RigidBodyBundle, RigidBodyPositionSync},
     prelude::{
         ActiveEvents, ColliderMaterial, ColliderShape, RigidBodyMassProps, RigidBodyMassPropsFlags,
-        RigidBodyType, RigidBodyVelocityComponent,
+        RigidBodyPositionComponent, RigidBodyType,
     },
 };
 use rand::prelude::random;
@@ -107,7 +107,7 @@ fn spawn_enemy(
         };
 
         let rigidbody = RigidBodyBundle {
-            body_type: RigidBodyType::KinematicVelocityBased.into(),
+            body_type: RigidBodyType::KinematicPositionBased.into(),
             position: position.into(),
             mass_properties: RigidBodyMassProps {
                 flags: RigidBodyMassPropsFlags::ROTATION_LOCKED,
@@ -132,10 +132,15 @@ fn spawn_enemy(
             .insert(Health::new(3.0))
             .insert(Enemy)
             .insert(Movement::Horizontal {
-                min: -random::<f32>() * 350.0,
-                max: random::<f32>() * 350.0,
+                min: random::<f32>() * 300.0 - 300.0,
+                max: random::<f32>() * 300.0,
                 current_dir: Dir::Left,
             })
+            // .insert(Movement::Circle {
+            //     center: Vec2::new(random::<f32>() * 100.0, random::<f32>() * 100.0),
+            //     radius: random::<f32>() * 100.0,
+            //     current_angle: 0.0,
+            // })
             .insert(Name::new("Enemy"));
     };
 
@@ -145,12 +150,13 @@ fn spawn_enemy(
 }
 
 fn movement(
+    time: Res<Time>,
     mut enemies: Query<
-        (&mut Movement, &Transform, &mut RigidBodyVelocityComponent),
+        (&mut Movement, &Transform, &mut RigidBodyPositionComponent),
         Without<Player>,
     >,
 ) {
-    for (mut movement, transform, mut velocity) in enemies.iter_mut() {
+    for (mut movement, transform, mut position) in enemies.iter_mut() {
         match *movement {
             Movement::Horizontal {
                 min,
@@ -162,10 +168,25 @@ fn movement(
                 } else if transform.translation.x >= max {
                     *current_dir = Dir::Left;
                 }
-                velocity.linvel.x = current_dir.as_f32() * 100.0;
+                position.next_position.translation = [
+                    position.position.translation.x
+                        + current_dir.as_f32() * 100.0 * time.delta_seconds(),
+                    position.position.translation.y,
+                ]
+                .into();
             }
             Movement::Chase { .. } => todo!(),
-            Movement::Circle { .. } => todo!(),
+            Movement::Circle {
+                center,
+                ref mut current_angle,
+                radius,
+            } => {
+                let x = center.x + radius * current_angle.cos();
+                let y = center.y + radius * current_angle.sin();
+                let angular_speed = 1.0;
+                *current_angle += time.delta_seconds() * angular_speed;
+                position.next_position = [x, y].into();
+            }
             Movement::Static => {}
         }
     }
