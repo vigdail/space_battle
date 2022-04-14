@@ -13,7 +13,7 @@ use bevy_rapier2d::{
 };
 
 use crate::{
-    combat::{Bullet, Health, Weapon, WeaponSlot, WeaponSlots},
+    combat::{Bullet, Health, Radian, Weapon, WeaponSlot, WeaponSlots},
     Lifetime, Owner,
 };
 
@@ -71,14 +71,17 @@ fn spawn_player(mut commands: Commands, rapier_config: Res<RapierConfiguration>)
                 WeaponSlot {
                     weapon: None,
                     position: Vec2::new(0.0, 20.0),
+                    angle: Radian::up(),
                 },
                 WeaponSlot {
                     weapon: None,
                     position: Vec2::new(-15.0, 20.0),
+                    angle: Radian::up(),
                 },
                 WeaponSlot {
                     weapon: None,
                     position: Vec2::new(15.0, 20.0),
+                    angle: Radian::from_deg(45.0),
                 },
             ],
         });
@@ -119,16 +122,19 @@ pub fn player_shoot(
     }
 
     for (player_entity, slots) in players.iter() {
-        for weapon in slots.weapons.iter().filter_map(|slot| slot.weapon) {
-            if let Ok((weapon, &global_transform)) = weapons.get(weapon) {
-                let damage = match weapon {
-                    &Weapon::Laser { damage, .. } => damage,
-                };
-                let size = Vec2::new(8.0, 16.0);
+        for weapon_slot in slots.weapons.iter().filter(|slot| slot.weapon.is_some()) {
+            if let Ok((weapon, &global_transform)) = weapons.get(weapon_slot.weapon.unwrap()) {
+                let damage = weapon.damage();
+                let size = Vec2::new(16.0, 8.0);
                 let collider_size = size / rapier_config.scale;
+                let bullet_speed = 300.0;
+                let bullet_velocity = [
+                    bullet_speed * weapon_slot.angle.cos(),
+                    bullet_speed * weapon_slot.angle.sin(),
+                ];
                 let rigidbody = RigidBodyBundle {
                     velocity: RigidBodyVelocity {
-                        linvel: [0.0, 300.0].into(),
+                        linvel: bullet_velocity.into(),
                         ..Default::default()
                     }
                     .into(),
@@ -137,11 +143,11 @@ pub fn player_shoot(
                         ..Default::default()
                     }
                     .into(),
-                    position: [
-                        global_transform.translation.x,
-                        global_transform.translation.y,
-                    ]
-                    .into(),
+                    position: (
+                        global_transform.translation.truncate(),
+                        f32::from(weapon_slot.angle),
+                    )
+                        .into(),
                     ..Default::default()
                 };
 

@@ -9,10 +9,50 @@ pub enum Weapon {
     Laser { damage: f32, cooldown: f32 },
 }
 
+impl Weapon {
+    pub fn damage(&self) -> f32 {
+        match self {
+            Weapon::Laser { damage, .. } => *damage,
+        }
+    }
+}
+
+#[derive(Inspectable, Default, Copy, Clone)]
+pub struct Radian(f32);
+
+impl Radian {
+    const PI: f32 = std::f32::consts::PI;
+    pub fn up() -> Self {
+        Self(Self::PI / 2.0)
+    }
+    pub fn down() -> Self {
+        Self(Self::PI * 3.0 / 2.0)
+    }
+
+    pub fn from_deg(deg: f32) -> Radian {
+        Self(deg * Self::PI / 180.0)
+    }
+
+    pub fn cos(&self) -> f32 {
+        self.0.cos()
+    }
+
+    pub fn sin(&self) -> f32 {
+        self.0.sin()
+    }
+}
+
+impl From<Radian> for f32 {
+    fn from(rad: Radian) -> Self {
+        rad.0
+    }
+}
+
 #[derive(Inspectable, Default, Clone)]
 pub struct WeaponSlot {
     pub weapon: Option<Entity>,
     pub position: Vec2,
+    pub angle: Radian,
 }
 
 #[derive(Component, Inspectable)]
