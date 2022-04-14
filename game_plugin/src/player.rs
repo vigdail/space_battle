@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bevy_inspector_egui::{Inspectable, RegisterInspectable};
 use bevy_rapier2d::{
-    na::Vector2,
+    na::{Rotation2, Vector2},
     physics::{
         ColliderBundle, ColliderPositionSync, RapierConfiguration, RigidBodyBundle,
         RigidBodyPositionSync,
@@ -128,13 +128,11 @@ pub fn player_shoot(
                 let size = Vec2::new(16.0, 8.0);
                 let collider_size = size / rapier_config.scale;
                 let bullet_speed = 300.0;
-                let bullet_velocity = [
-                    bullet_speed * weapon_slot.angle.cos(),
-                    bullet_speed * weapon_slot.angle.sin(),
-                ];
+                let bullet_rotation = Rotation2::new(f32::from(weapon_slot.angle));
+                let bullet_velocity = bullet_rotation.transform_vector(&[bullet_speed, 0.0].into());
                 let rigidbody = RigidBodyBundle {
                     velocity: RigidBodyVelocity {
-                        linvel: bullet_velocity.into(),
+                        linvel: bullet_velocity,
                         ..Default::default()
                     }
                     .into(),
