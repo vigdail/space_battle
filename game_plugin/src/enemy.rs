@@ -35,6 +35,18 @@ impl Default for Dir {
     }
 }
 
+#[derive(Inspectable, Copy, Clone)]
+pub enum RotationDir {
+    Clockwise,
+    CounterClockwise,
+}
+
+impl Default for RotationDir {
+    fn default() -> Self {
+        Self::Clockwise
+    }
+}
+
 #[derive(Component, Inspectable)]
 pub enum Movement {
     Static,
@@ -49,6 +61,7 @@ pub enum Movement {
     Circle {
         center: Vec2,
         radius: f32,
+        rotation_dir: RotationDir,
         current_angle: f32,
     },
 }
@@ -56,6 +69,17 @@ pub enum Movement {
 impl Default for Movement {
     fn default() -> Self {
         Self::Static
+    }
+}
+
+impl Movement {
+    pub fn circle(center: Vec2, radius: f32, rotation_dir: RotationDir) -> Self {
+        Self::Circle {
+            center,
+            radius,
+            rotation_dir,
+            current_angle: 0.0,
+        }
     }
 }
 
@@ -73,7 +97,8 @@ impl Plugin for EnemyPlugin {
             .add_event::<SpawnEnemyEvent>()
             .add_system(count_enemies.label(COUNT_ENEMIES_LABEL))
             .add_system(spawn_enemy.after(COUNT_ENEMIES_LABEL))
-            .add_system(movement);
+            .add_system(movement)
+            .add_system(test_chase);
     }
 }
 
@@ -131,16 +156,19 @@ fn spawn_enemy(
             .insert(RigidBodyPositionSync::Discrete)
             .insert(Health::new(3.0))
             .insert(Enemy)
-            .insert(Movement::Horizontal {
-                min: random::<f32>() * 300.0 - 300.0,
-                max: random::<f32>() * 300.0,
-                current_dir: Dir::Left,
+            .insert(if random::<bool>() {
+                Movement::Horizontal {
+                    min: random::<f32>() * 300.0 - 300.0,
+                    max: random::<f32>() * 300.0,
+                    current_dir: Dir::Left,
+                }
+            } else {
+                Movement::circle(
+                    Vec2::new(random::<f32>() * 100.0, random::<f32>() * 100.0),
+                    random::<f32>() * 100.0 + 10.0,
+                    RotationDir::Clockwise,
+                )
             })
-            // .insert(Movement::Circle {
-            //     center: Vec2::new(random::<f32>() * 100.0, random::<f32>() * 100.0),
-            //     radius: random::<f32>() * 100.0,
-            //     current_angle: 0.0,
-            // })
             .insert(Name::new("Enemy"));
     };
 
@@ -149,12 +177,31 @@ fn spawn_enemy(
     }
 }
 
+fn test_chase(
+    mut commands: Commands,
+    input: Res<Input<KeyCode>>,
+    players: Query<Entity, With<Player>>,
+    movements: Query<(Entity, &Movement)>,
+) {
+    if !input.just_pressed(KeyCode::C) {
+        return;
+    }
+    if let Some((player_entity, chasing_entity)) = players.get_single().ok().zip(
+        movements
+            .iter()
+            .find(|(_, m)| !matches!(m, Movement::Chase { .. }))
+            .map(|(e, _)| e),
+    ) {
+        commands.entity(chasing_entity).insert(Movement::Chase {
+            target: Some(player_entity),
+        });
+    }
+}
+
 fn movement(
     time: Res<Time>,
-    mut enemies: Query<
-        (&mut Movement, &Transform, &mut RigidBodyPositionComponent),
-        Without<Player>,
-    >,
+    mut enemies: Query<(&mut Movement, &Transform, &mut RigidBodyPositionComponent)>,
+    transforms: Query<&Transform>,
 ) {
     for (mut movement, transform, mut position) in enemies.iter_mut() {
         match *movement {
@@ -175,16 +222,36 @@ fn movement(
                 ]
                 .into();
             }
-            Movement::Chase { .. } => todo!(),
+            Movement::Chase { target } => {
+                if let Some(target_transform) =
+                    target.and_then(|target| transforms.get(target).ok())
+                {
+                    let target_position = target_transform.translation;
+                    let dir = Vec2::new(
+                        target_position.x - position.position.translation.x,
+                        target_position.y - position.position.translation.y,
+                    )
+                    .normalize();
+                    let speed = 40.0;
+                    let x = position.position.translation.x + dir.x * time.delta_seconds() * speed;
+                    let y = position.position.translation.y + dir.y * time.delta_seconds() * speed;
+                    position.next_position = [x, y].into();
+                }
+            }
             Movement::Circle {
                 center,
                 ref mut current_angle,
                 radius,
+                rotation_dir,
             } => {
                 let x = center.x + radius * current_angle.cos();
                 let y = center.y + radius * current_angle.sin();
                 let angular_speed = 1.0;
-                *current_angle += time.delta_seconds() * angular_speed;
+                let dir = match rotation_dir {
+                    RotationDir::Clockwise => 1.0,
+                    RotationDir::CounterClockwise => -1.0,
+                };
+                *current_angle += dir * time.delta_seconds() * angular_speed;
                 position.next_position = [x, y].into();
             }
             Movement::Static => {}
