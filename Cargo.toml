@@ -5,7 +5,7 @@ version = "0.1.0"
 
 [features]
 debug = ["game_plugin/debug", "bevy-inspector-egui"]
-# default = ["debug"]
+default = ["debug"]
 
 [profile.dev]
 opt-level = 1
