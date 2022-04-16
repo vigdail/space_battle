@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+#[cfg(feature = "debug")]
 use bevy_inspector_egui::{Inspectable, RegisterInspectable};
 use bevy_rapier2d::{
     physics::{ColliderBundle, RapierConfiguration, RigidBodyBundle, RigidBodyPositionSync},
@@ -11,10 +12,11 @@ use rand::prelude::random;
 
 use crate::{combat::Health, player::Player};
 
-#[derive(Component, Inspectable)]
+#[cfg_attr(feature = "debug", derive(Inspectable))]
+#[derive(Component)]
 pub struct Enemy;
 
-#[derive(Inspectable)]
+#[cfg_attr(feature = "debug", derive(Inspectable))]
 pub enum Dir {
     Left,
     Right,
@@ -35,7 +37,8 @@ impl Default for Dir {
     }
 }
 
-#[derive(Inspectable, Copy, Clone)]
+#[cfg_attr(feature = "debug", derive(Inspectable))]
+#[derive(Copy, Clone)]
 pub enum RotationDir {
     Clockwise,
     CounterClockwise,
@@ -47,7 +50,8 @@ impl Default for RotationDir {
     }
 }
 
-#[derive(Component, Inspectable)]
+#[cfg_attr(feature = "debug", derive(Inspectable))]
+#[derive(Component)]
 pub enum Movement {
     Static,
     Horizontal {
@@ -91,10 +95,11 @@ pub struct EnemyPlugin;
 
 impl Plugin for EnemyPlugin {
     fn build(&self, app: &mut App) {
+        #[cfg(feature = "debug")]
         app.register_inspectable::<Enemy>()
             .register_inspectable::<Dir>()
-            .register_inspectable::<Movement>()
-            .add_event::<SpawnEnemyEvent>()
+            .register_inspectable::<Movement>();
+        app.add_event::<SpawnEnemyEvent>()
             .add_system(count_enemies.label(COUNT_ENEMIES_LABEL))
             .add_system(spawn_enemy.after(COUNT_ENEMIES_LABEL))
             .add_system(movement)

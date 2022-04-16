@@ -1,10 +1,12 @@
 use bevy::prelude::*;
+#[cfg(feature = "debug")]
 use bevy_inspector_egui::{Inspectable, RegisterInspectable};
 use bevy_rapier2d::{physics::IntoEntity, prelude::IntersectionEvent};
 
 use crate::{player::Player, Owner};
 
-#[derive(Component, Inspectable, Debug)]
+#[cfg_attr(feature = "debug", derive(Inspectable))]
+#[derive(Component, Debug)]
 pub enum Weapon {
     Laser { damage: f32, cooldown: f32 },
 }
@@ -17,7 +19,8 @@ impl Weapon {
     }
 }
 
-#[derive(Inspectable, Default, Copy, Clone)]
+#[cfg_attr(feature = "debug", derive(Inspectable))]
+#[derive(Default, Copy, Clone)]
 pub struct Radian(f32);
 
 impl Radian {
@@ -48,14 +51,16 @@ impl From<Radian> for f32 {
     }
 }
 
-#[derive(Inspectable, Default, Clone)]
+#[cfg_attr(feature = "debug", derive(Inspectable))]
+#[derive(Default, Clone)]
 pub struct WeaponSlot {
     pub weapon: Option<Entity>,
     pub position: Vec2,
     pub angle: Radian,
 }
 
-#[derive(Component, Inspectable)]
+#[cfg_attr(feature = "debug", derive(Inspectable))]
+#[derive(Component)]
 pub struct WeaponSlots {
     pub weapons: Vec<WeaponSlot>,
 }
@@ -64,12 +69,14 @@ pub enum Contact {
     HealthBullet(Entity, Entity),
 }
 
-#[derive(Component, Inspectable)]
+#[cfg_attr(feature = "debug", derive(Inspectable))]
+#[derive(Component)]
 pub struct Bullet {
     pub damage: f32,
 }
 
-#[derive(Component, Inspectable)]
+#[cfg_attr(feature = "debug", derive(Inspectable))]
+#[derive(Component)]
 pub struct Health {
     pub current: f32,
     pub max: f32,
@@ -98,12 +105,13 @@ pub struct CombatPlugin;
 
 impl Plugin for CombatPlugin {
     fn build(&self, app: &mut App) {
+        #[cfg(feature = "debug")]
         app.register_inspectable::<Weapon>()
             .register_inspectable::<WeaponSlot>()
             .register_inspectable::<WeaponSlots>()
             .register_inspectable::<Bullet>()
-            .register_inspectable::<Health>()
-            .add_event::<EquipWeaponEvent>()
+            .register_inspectable::<Health>();
+        app.add_event::<EquipWeaponEvent>()
             .add_event::<Contact>()
             .add_system(equip_weapon)
             .add_system(handle_intersections)

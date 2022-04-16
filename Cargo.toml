@@ -5,10 +5,16 @@ version = "0.1.0"
 
 [features]
 debug = ["game_plugin/debug", "bevy-inspector-egui"]
-default = ["debug"]
+# default = ["debug"]
+
+[profile.dev]
+opt-level = 1
+
+[profile.dev.package."*"]
+opt-level = 3
 
 [dependencies]
-bevy = { version = "0.6.1", features = ["dynamic"] }
+bevy = {version = "0.6.1", features = ["dynamic"]}
 bevy-inspector-egui = {version = "0.8.2", optional = true}
 bevy_rapier2d = "0.12.1"
 game_plugin = {path = "game_plugin"}

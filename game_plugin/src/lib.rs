@@ -3,17 +3,20 @@ mod enemy;
 mod player;
 
 use bevy::prelude::*;
+#[cfg(feature = "debug")]
 use bevy_inspector_egui::{Inspectable, RegisterInspectable};
 use bevy_rapier2d::{
     physics::{ColliderBundle, ColliderPositionSync, RapierConfiguration, RigidBodyBundle},
     prelude::{ColliderMaterial, ColliderShape, RigidBodyType},
     render::ColliderDebugRender,
 };
+
 use combat::CombatPlugin;
 use enemy::EnemyPlugin;
 use player::PlayerPlugin;
 
-#[derive(Component, Inspectable)]
+#[derive(Component)]
+#[cfg_attr(feature = "debug", derive(Inspectable))]
 pub struct Owner {
     pub entity: Entity,
 }
@@ -27,8 +30,9 @@ pub struct GamePlugin;
 
 impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
-        app.register_inspectable::<Owner>()
-            .add_plugin(PlayerPlugin)
+        #[cfg(feature = "debug")]
+        app.register_inspectable::<Owner>();
+        app.add_plugin(PlayerPlugin)
             .add_plugin(CombatPlugin)
             .add_plugin(EnemyPlugin)
             .add_startup_system(spawn_bounds)

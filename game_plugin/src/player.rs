@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+#[cfg(feature = "debug")]
 use bevy_inspector_egui::{Inspectable, RegisterInspectable};
 use bevy_rapier2d::{
     na::{Rotation2, Vector2},
@@ -17,7 +18,8 @@ use crate::{
     Lifetime, Owner,
 };
 
-#[derive(Component, Inspectable)]
+#[cfg_attr(feature = "debug", derive(Inspectable))]
+#[derive(Component)]
 pub struct Player {
     pub speed: f32,
 }
@@ -26,8 +28,9 @@ pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
-        app.register_inspectable::<Player>()
-            .add_startup_system(spawn_player)
+        #[cfg(feature = "debug")]
+        app.register_inspectable::<Player>();
+        app.add_startup_system(spawn_player)
             .add_system(player_movement)
             .add_system(player_shoot);
     }

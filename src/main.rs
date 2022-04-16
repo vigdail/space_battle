@@ -2,10 +2,9 @@ use bevy::prelude::*;
 
 #[cfg(feature = "debug")]
 use bevy_inspector_egui::WorldInspectorPlugin;
-use bevy_rapier2d::{
-    physics::{NoUserData, RapierConfiguration, RapierPhysicsPlugin},
-    render::RapierRenderPlugin,
-};
+use bevy_rapier2d::physics::{NoUserData, RapierConfiguration, RapierPhysicsPlugin};
+#[cfg(feature = "debug")]
+use bevy_rapier2d::render::RapierRenderPlugin;
 use game_plugin::GamePlugin;
 
 fn main() {
