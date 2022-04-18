@@ -2,20 +2,17 @@ use bevy::prelude::*;
 #[cfg(feature = "debug")]
 use bevy_inspector_egui::{Inspectable, RegisterInspectable};
 use bevy_rapier2d::{
-    na::Rotation2,
     physics::{ColliderBundle, RapierConfiguration, RigidBodyBundle, RigidBodyPositionSync},
     prelude::{
-        ActiveEvents, ColliderMaterial, ColliderShape, ColliderType, RigidBodyForces,
-        RigidBodyMassProps, RigidBodyMassPropsFlags, RigidBodyPositionComponent, RigidBodyType,
-        RigidBodyVelocity,
+        ActiveEvents, ColliderMaterial, ColliderShape, RigidBodyMassProps, RigidBodyMassPropsFlags,
+        RigidBodyPositionComponent, RigidBodyType,
     },
 };
 use rand::prelude::random;
 
 use crate::{
-    combat::{Bullet, Cooldown, Health, Radian, Weapon, WeaponSlot, WeaponSlots},
+    combat::{Cooldown, Health, Radian, ShootEvent, Weapon, WeaponSlot, WeaponSlots},
     player::Player,
-    Lifetime, Owner,
 };
 
 #[cfg_attr(feature = "debug", derive(Inspectable))]
@@ -168,7 +165,7 @@ fn spawn_enemy(
                 damage: 1.0,
                 cooldown: Cooldown::from_seconds(1.0),
             })
-            .insert(Name::new(format!("Laser")))
+            .insert(Name::new("Laser"))
             .insert(Transform::from_xyz(0.0, -20.0, 0.0))
             .id();
 
@@ -302,72 +299,25 @@ fn movement(
 }
 
 fn enemy_shoot(
-    mut commands: Commands,
-    rapier_config: Res<RapierConfiguration>,
+    mut shoot_events: EventWriter<ShootEvent>,
     enemies: Query<(Entity, &WeaponSlots), With<Enemy>>,
-    mut weapons: Query<(&mut Weapon, &GlobalTransform)>,
+    weapons: Query<&Weapon>,
 ) {
-    for (enemy_entity, slots) in enemies.iter() {
-        for weapon_slot in slots.weapons.iter().filter(|slot| slot.weapon.is_some()) {
-            if let Ok((mut weapon, &global_transform)) =
-                weapons.get_mut(weapon_slot.weapon.unwrap())
-            {
-                if !weapon.cooldown().0.finished() {
-                    continue;
-                }
-                weapon.cooldown_mut().0.reset();
-                let damage = weapon.damage();
-                let size = Vec2::new(16.0, 8.0);
-                let collider_size = size / rapier_config.scale;
-                let bullet_speed = 300.0;
-                let bullet_rotation = Rotation2::new(f32::from(weapon_slot.angle));
-                let bullet_velocity = bullet_rotation.transform_vector(&[bullet_speed, 0.0].into());
-                let rigidbody = RigidBodyBundle {
-                    velocity: RigidBodyVelocity {
-                        linvel: bullet_velocity,
-                        ..Default::default()
-                    }
-                    .into(),
-                    forces: RigidBodyForces {
-                        gravity_scale: 0.0,
-                        ..Default::default()
-                    }
-                    .into(),
-                    position: (
-                        global_transform.translation.truncate(),
-                        f32::from(weapon_slot.angle),
-                    )
-                        .into(),
-                    ..Default::default()
-                };
-
-                let collider = ColliderBundle {
-                    collider_type: ColliderType::Sensor.into(),
-                    shape: ColliderShape::cuboid(collider_size.x / 2.0, collider_size.y / 2.0)
-                        .into(),
-                    flags: (ActiveEvents::INTERSECTION_EVENTS).into(),
-                    ..Default::default()
-                };
-                commands
-                    .spawn_bundle(SpriteBundle {
-                        sprite: Sprite {
-                            color: Color::BLUE,
-                            custom_size: Some(size),
-                            ..Default::default()
-                        },
-                        ..Default::default()
-                    })
-                    .insert(Bullet { damage })
-                    .insert(Lifetime {
-                        timer: Timer::from_seconds(1.0, false),
-                    })
-                    .insert_bundle(rigidbody)
-                    .insert_bundle(collider)
-                    .insert(RigidBodyPositionSync::Discrete)
-                    .insert(Owner {
-                        entity: enemy_entity,
-                    });
-            }
+    for (shooter_entity, slots) in enemies.iter() {
+        for weapon_slot in slots.weapons.iter().filter(|slot| {
+            slot.weapon
+                .and_then(|weapon| {
+                    weapons
+                        .get(weapon)
+                        .ok()
+                        .filter(|weapon| weapon.cooldown().0.finished())
+                })
+                .is_some()
+        }) {
+            shoot_events.send(ShootEvent {
+                weapon_slot: weapon_slot.clone(),
+                shooter: shooter_entity,
+            });
         }
     }
 }

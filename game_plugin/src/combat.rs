@@ -3,9 +3,18 @@ use std::time::Duration;
 use bevy::prelude::*;
 #[cfg(feature = "debug")]
 use bevy_inspector_egui::{Inspectable, RegisterInspectable};
-use bevy_rapier2d::{physics::IntoEntity, prelude::IntersectionEvent};
+use bevy_rapier2d::{
+    na::Rotation2,
+    physics::{
+        ColliderBundle, IntoEntity, RapierConfiguration, RigidBodyBundle, RigidBodyPositionSync,
+    },
+    prelude::{
+        ActiveEvents, ColliderShape, ColliderType, IntersectionEvent, RigidBodyForces,
+        RigidBodyVelocity,
+    },
+};
 
-use crate::{player::Player, Owner};
+use crate::{player::Player, Lifetime, Owner};
 
 #[cfg_attr(feature = "debug", derive(Inspectable))]
 #[derive(Debug, Default)]
@@ -89,6 +98,11 @@ pub struct WeaponSlots {
     pub weapons: Vec<WeaponSlot>,
 }
 
+pub struct ShootEvent {
+    pub weapon_slot: WeaponSlot,
+    pub shooter: Entity,
+}
+
 pub enum Contact {
     HealthBullet(Entity, Entity),
 }
@@ -136,12 +150,14 @@ impl Plugin for CombatPlugin {
             .register_inspectable::<Bullet>()
             .register_inspectable::<Health>();
         app.add_event::<EquipWeaponEvent>()
+            .add_event::<ShootEvent>()
             .add_event::<Contact>()
             .add_system(equip_weapon)
             .add_system(handle_intersections)
             .add_system(handle_contacts)
             .add_system(despawn_dead)
             .add_system(update_cooldowns)
+            .add_system(spawn_bullets)
             .add_system(test_equip_weapon);
     }
 }
@@ -235,7 +251,7 @@ pub fn test_equip_weapon(
                     })
                     .insert(Weapon::Laser {
                         damage: 1.0,
-                        cooldown: Cooldown::from_seconds(1.0),
+                        cooldown: Cooldown::from_seconds(0.2),
                     })
                     .insert(Name::new(format!("Weapon {}", slot_index)))
                     .id();
@@ -265,6 +281,75 @@ pub fn equip_weapon(
                     .insert(Visibility { is_visible: true });
                 commands.entity(event.entity).add_child(event.weapon_entity);
             }
+        }
+    }
+}
+
+fn spawn_bullets(
+    mut commands: Commands,
+    rapier_config: Res<RapierConfiguration>,
+    mut events: EventReader<ShootEvent>,
+    mut weapons: Query<(&mut Weapon, &GlobalTransform)>,
+) {
+    for ShootEvent {
+        weapon_slot,
+        shooter,
+    } in events.iter()
+    {
+        if let Some((mut weapon, global_transform)) = weapon_slot
+            .weapon
+            .and_then(|weapon_entity| weapons.get_mut(weapon_entity).ok())
+        {
+            weapon.cooldown_mut().0.reset();
+            let damage = weapon.damage();
+            let size = Vec2::new(16.0, 8.0);
+            let collider_size = size / rapier_config.scale;
+            let bullet_speed = 300.0;
+            let bullet_rotation = Rotation2::new(f32::from(weapon_slot.angle));
+            let bullet_velocity = bullet_rotation.transform_vector(&[bullet_speed, 0.0].into());
+
+            let rigidbody = RigidBodyBundle {
+                velocity: RigidBodyVelocity {
+                    linvel: bullet_velocity,
+                    ..Default::default()
+                }
+                .into(),
+                forces: RigidBodyForces {
+                    gravity_scale: 0.0,
+                    ..Default::default()
+                }
+                .into(),
+                position: (
+                    global_transform.translation.truncate(),
+                    f32::from(weapon_slot.angle),
+                )
+                    .into(),
+                ..Default::default()
+            };
+
+            let collider = ColliderBundle {
+                collider_type: ColliderType::Sensor.into(),
+                shape: ColliderShape::cuboid(collider_size.x / 2.0, collider_size.y / 2.0).into(),
+                flags: (ActiveEvents::INTERSECTION_EVENTS).into(),
+                ..Default::default()
+            };
+            commands
+                .spawn_bundle(SpriteBundle {
+                    sprite: Sprite {
+                        color: Color::BLUE,
+                        custom_size: Some(size),
+                        ..Default::default()
+                    },
+                    ..Default::default()
+                })
+                .insert(Bullet { damage })
+                .insert(Lifetime {
+                    timer: Timer::from_seconds(1.0, false),
+                })
+                .insert_bundle(rigidbody)
+                .insert_bundle(collider)
+                .insert(RigidBodyPositionSync::Discrete)
+                .insert(Owner { entity: *shooter });
         }
     }
 }
