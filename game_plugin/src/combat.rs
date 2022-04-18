@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use bevy::prelude::*;
 #[cfg(feature = "debug")]
 use bevy_inspector_egui::{Inspectable, RegisterInspectable};
@@ -6,15 +8,37 @@ use bevy_rapier2d::{physics::IntoEntity, prelude::IntersectionEvent};
 use crate::{player::Player, Owner};
 
 #[cfg_attr(feature = "debug", derive(Inspectable))]
+#[derive(Debug, Default)]
+pub struct Cooldown(#[inspectable(ignore)] pub Timer);
+
+impl Cooldown {
+    pub fn from_seconds(seconds: f32) -> Self {
+        Self(Timer::new(Duration::from_secs_f32(seconds), false))
+    }
+}
+
+#[cfg_attr(feature = "debug", derive(Inspectable))]
 #[derive(Component, Debug)]
 pub enum Weapon {
-    Laser { damage: f32, cooldown: f32 },
+    Laser { damage: f32, cooldown: Cooldown },
 }
 
 impl Weapon {
     pub fn damage(&self) -> f32 {
         match self {
             Weapon::Laser { damage, .. } => *damage,
+        }
+    }
+
+    pub fn cooldown(&self) -> &Cooldown {
+        match self {
+            Weapon::Laser { cooldown, .. } => cooldown,
+        }
+    }
+
+    pub fn cooldown_mut(&mut self) -> &mut Cooldown {
+        match self {
+            Weapon::Laser { cooldown, .. } => cooldown,
         }
     }
 }
@@ -117,6 +141,7 @@ impl Plugin for CombatPlugin {
             .add_system(handle_intersections)
             .add_system(handle_contacts)
             .add_system(despawn_dead)
+            .add_system(update_cooldowns)
             .add_system(test_equip_weapon);
     }
 }
@@ -175,8 +200,14 @@ pub fn handle_contacts(
 pub fn despawn_dead(mut commands: Commands, healths: Query<(Entity, &Health), Changed<Health>>) {
     for (entity, health) in healths.iter() {
         if health.is_dead() {
-            commands.entity(entity).despawn();
+            commands.entity(entity).despawn_recursive();
         }
+    }
+}
+
+pub fn update_cooldowns(time: Res<Time>, mut weapons: Query<&mut Weapon>) {
+    for mut weapon in weapons.iter_mut() {
+        weapon.cooldown_mut().0.tick(time.delta());
     }
 }
 
@@ -204,7 +235,7 @@ pub fn test_equip_weapon(
                     })
                     .insert(Weapon::Laser {
                         damage: 1.0,
-                        cooldown: 1.0,
+                        cooldown: Cooldown::from_seconds(1.0),
                     })
                     .insert(Name::new(format!("Weapon {}", slot_index)))
                     .id();
