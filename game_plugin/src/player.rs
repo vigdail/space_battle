@@ -5,8 +5,8 @@ use bevy_rapier2d::{
     na::Vector2,
     physics::{ColliderBundle, ColliderPositionSync, RapierConfiguration, RigidBodyBundle},
     prelude::{
-        ColliderMaterial, ColliderShape, RigidBodyMassProps, RigidBodyMassPropsFlags,
-        RigidBodyVelocityComponent,
+        ColliderMaterial, ColliderShape, RigidBodyForces, RigidBodyMassProps,
+        RigidBodyMassPropsFlags, RigidBodyVelocityComponent,
     },
 };
 
@@ -21,17 +21,22 @@ pub struct Player {
     pub speed: f32,
 }
 
+pub struct GameOverEvent;
+
 pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         #[cfg(feature = "debug")]
         app.register_inspectable::<Player>();
-        app.add_system_set(SystemSet::on_enter(GameState::Gameplay).with_system(spawn_player))
+        app.add_event::<GameOverEvent>()
+            .add_system_set(SystemSet::on_enter(GameState::Gameplay).with_system(spawn_player))
             .add_system_set(
                 SystemSet::on_update(GameState::Gameplay)
                     .with_system(player_movement)
-                    .with_system(player_shoot),
+                    .with_system(player_shoot)
+                    .with_system(track_player_dead)
+                    .with_system(handle_game_over),
             );
     }
 }
@@ -63,6 +68,11 @@ fn spawn_player(mut commands: Commands, rapier_config: Res<RapierConfiguration>)
                 ..Default::default()
             }
             .into(),
+            forces: RigidBodyForces {
+                gravity_scale: 0.0,
+                ..Default::default()
+            }
+            .into(),
             ..Default::default()
         })
         .insert(ColliderPositionSync::Discrete)
@@ -88,6 +98,26 @@ fn spawn_player(mut commands: Commands, rapier_config: Res<RapierConfiguration>)
                 },
             ],
         });
+}
+
+pub fn track_player_dead(
+    mut game_over_events: EventWriter<GameOverEvent>,
+    players: Query<&Health, (With<Player>, Changed<Health>)>,
+) {
+    if players.iter().next().is_some() && players.iter().all(|health| health.is_dead()) {
+        game_over_events.send(GameOverEvent);
+    }
+}
+
+pub fn handle_game_over(
+    mut events: EventReader<GameOverEvent>,
+    mut state: ResMut<State<GameState>>,
+) {
+    if events.iter().next().is_some() {
+        state
+            .set(GameState::GameOver)
+            .expect("Unable to set state to GameOver");
+    }
 }
 
 pub fn player_movement(

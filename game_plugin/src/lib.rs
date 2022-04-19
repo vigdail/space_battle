@@ -1,6 +1,7 @@
 mod combat;
 mod countdown;
 mod enemy;
+mod game_over;
 mod loading;
 mod main_menu;
 mod player;
@@ -18,6 +19,7 @@ use bevy_rapier2d::{
 use combat::CombatPlugin;
 use countdown::CountdownPlugin;
 use enemy::EnemyPlugin;
+use game_over::GameOverPlugin;
 use loading::LoadingPlugin;
 use main_menu::MainMenuPlugin;
 use player::PlayerPlugin;
@@ -41,9 +43,10 @@ impl Plugin for GamePlugin {
         #[cfg(feature = "debug")]
         app.register_inspectable::<Owner>();
         app.add_state(GameState::Loading)
-            .add_plugin(MainMenuPlugin)
             .add_plugin(LoadingPlugin)
+            .add_plugin(MainMenuPlugin)
             .add_plugin(CountdownPlugin)
+            .add_plugin(GameOverPlugin)
             .add_plugin(PlayerPlugin)
             .add_plugin(CombatPlugin)
             .add_plugin(EnemyPlugin)
