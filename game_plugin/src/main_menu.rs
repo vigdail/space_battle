@@ -69,7 +69,7 @@ fn button_system(
 fn handle_start_game(mut events: EventReader<StartGameEvent>, mut state: ResMut<State<GameState>>) {
     if events.iter().next().is_some() {
         state
-            .set(GameState::Gameplay)
+            .set(GameState::Countdown)
             .expect("Unable to change state to Gameplay");
     }
 }

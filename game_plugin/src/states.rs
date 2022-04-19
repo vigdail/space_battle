@@ -2,7 +2,7 @@
 pub enum GameState {
     Loading,
     MainMenu,
-    CountDown,
+    Countdown,
     Gameplay,
     GameOver,
 }

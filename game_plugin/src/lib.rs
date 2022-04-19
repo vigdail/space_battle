@@ -1,4 +1,5 @@
 mod combat;
+mod countdown;
 mod enemy;
 mod loading;
 mod main_menu;
@@ -15,6 +16,7 @@ use bevy_rapier2d::{
 };
 
 use combat::CombatPlugin;
+use countdown::CountdownPlugin;
 use enemy::EnemyPlugin;
 use loading::LoadingPlugin;
 use main_menu::MainMenuPlugin;
@@ -41,6 +43,7 @@ impl Plugin for GamePlugin {
         app.add_state(GameState::Loading)
             .add_plugin(MainMenuPlugin)
             .add_plugin(LoadingPlugin)
+            .add_plugin(CountdownPlugin)
             .add_plugin(PlayerPlugin)
             .add_plugin(CombatPlugin)
             .add_plugin(EnemyPlugin)
