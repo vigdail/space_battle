@@ -10,7 +10,10 @@ use bevy_rapier2d::{
     },
 };
 
-use crate::combat::{Health, Radian, ShootEvent, WeaponSlot, WeaponSlots};
+use crate::{
+    combat::{Health, Radian, ShootEvent, WeaponSlot, WeaponSlots},
+    states::GameState,
+};
 
 #[cfg_attr(feature = "debug", derive(Inspectable))]
 #[derive(Component)]
@@ -24,9 +27,12 @@ impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         #[cfg(feature = "debug")]
         app.register_inspectable::<Player>();
-        app.add_startup_system(spawn_player)
-            .add_system(player_movement)
-            .add_system(player_shoot);
+        app.add_system_set(SystemSet::on_enter(GameState::Gameplay).with_system(spawn_player))
+            .add_system_set(
+                SystemSet::on_update(GameState::Gameplay)
+                    .with_system(player_movement)
+                    .with_system(player_shoot),
+            );
     }
 }
 

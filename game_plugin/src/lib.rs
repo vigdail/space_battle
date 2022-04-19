@@ -1,6 +1,9 @@
 mod combat;
 mod enemy;
+mod loading;
+mod main_menu;
 mod player;
+mod states;
 
 use bevy::prelude::*;
 #[cfg(feature = "debug")]
@@ -13,7 +16,10 @@ use bevy_rapier2d::{
 
 use combat::CombatPlugin;
 use enemy::EnemyPlugin;
+use loading::LoadingPlugin;
+use main_menu::MainMenuPlugin;
 use player::PlayerPlugin;
+use states::GameState;
 
 #[derive(Component)]
 #[cfg_attr(feature = "debug", derive(Inspectable))]
@@ -32,7 +38,10 @@ impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
         #[cfg(feature = "debug")]
         app.register_inspectable::<Owner>();
-        app.add_plugin(PlayerPlugin)
+        app.add_state(GameState::Loading)
+            .add_plugin(MainMenuPlugin)
+            .add_plugin(LoadingPlugin)
+            .add_plugin(PlayerPlugin)
             .add_plugin(CombatPlugin)
             .add_plugin(EnemyPlugin)
             .add_startup_system(spawn_bounds)
