@@ -2,7 +2,7 @@ use bevy::{app::AppExit, prelude::*};
 #[cfg(feature = "debug")]
 use bevy_inspector_egui::{Inspectable, RegisterInspectable};
 
-use crate::states::GameState;
+use crate::{loading::FontAssets, states::GameState};
 
 #[derive(Component)]
 #[cfg_attr(feature = "debug", derive(Inspectable))]
@@ -16,9 +16,9 @@ struct MainMenuTag;
 
 pub struct StartGameEvent;
 
-const NORMAL_BUTTON: Color = Color::rgb(0.15, 0.15, 0.15);
-const HOVERED_BUTTON: Color = Color::rgb(0.25, 0.25, 0.25);
-const PRESSED_BUTTON: Color = Color::rgb(0.35, 0.75, 0.35);
+const NORMAL_BUTTON: Color = Color::rgb(0.25, 0.25, 0.25);
+const HOVERED_BUTTON: Color = Color::rgb(0.35, 0.35, 0.35);
+const PRESSED_BUTTON: Color = Color::rgb(0.45, 0.75, 0.45);
 
 pub struct MainMenuPlugin;
 
@@ -80,8 +80,9 @@ fn despawn_main_menu(mut commands: Commands, menu_query: Query<Entity, With<Main
     }
 }
 
-fn setup_main_menu(mut commands: Commands) {
+fn setup_main_menu(mut commands: Commands, fonts: Res<FontAssets>) {
     commands.spawn_bundle(UiCameraBundle::default());
+    let font = fonts.font.clone();
 
     commands
         .spawn_bundle(NodeBundle {
@@ -95,13 +96,13 @@ fn setup_main_menu(mut commands: Commands) {
             ..Default::default()
         })
         .with_children(|parent| {
-            spawn_button(parent, "Start", MenuButtonTag::Start);
-            spawn_button(parent, "Exit", MenuButtonTag::Exit);
+            spawn_button(parent, "Start", MenuButtonTag::Start, font.clone());
+            spawn_button(parent, "Exit", MenuButtonTag::Exit, font);
         })
         .insert(MainMenuTag);
 }
 
-fn spawn_button(parent: &mut ChildBuilder, text: &str, tag: MenuButtonTag) {
+fn spawn_button(parent: &mut ChildBuilder, text: &str, tag: MenuButtonTag, font: Handle<Font>) {
     parent
         .spawn_bundle(ButtonBundle {
             style: Style {
@@ -124,7 +125,7 @@ fn spawn_button(parent: &mut ChildBuilder, text: &str, tag: MenuButtonTag) {
                 text: Text::with_section(
                     text,
                     TextStyle {
-                        // TODO: load font
+                        font,
                         font_size: 40.0,
                         color: Color::BLACK.into(),
                         ..Default::default()

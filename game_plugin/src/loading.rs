@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy_asset_loader::{AssetCollection, AssetLoader};
 
 use crate::states::GameState;
 
@@ -6,13 +7,18 @@ pub struct LoadingPlugin;
 
 impl Plugin for LoadingPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system_set(SystemSet::on_enter(GameState::Loading).with_system(load_assets));
+        AssetLoader::new(GameState::Loading)
+            .continue_to_state(GameState::MainMenu)
+            .with_collection::<FontAssets>()
+            .build(app);
+        app.add_system_set(SystemSet::on_enter(GameState::Loading).with_system(|| {
+            println!("Loading...");
+        }));
     }
 }
 
-// TODO
-fn load_assets(mut states: ResMut<State<GameState>>) {
-    states
-        .set(GameState::MainMenu)
-        .expect("Unable to switch game state to MainMenu");
+#[derive(AssetCollection)]
+pub struct FontAssets {
+    #[asset(path = "fonts/Boxfont Round.ttf")]
+    pub font: Handle<Font>,
 }
