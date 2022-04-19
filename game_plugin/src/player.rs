@@ -10,7 +10,7 @@ use bevy_rapier2d::{
     },
 };
 
-use crate::combat::{Health, Radian, ShootEvent, Weapon, WeaponSlot, WeaponSlots};
+use crate::combat::{Health, Radian, ShootEvent, WeaponSlot, WeaponSlots};
 
 #[cfg_attr(feature = "debug", derive(Inspectable))]
 #[derive(Component)]
@@ -110,28 +110,11 @@ pub fn player_movement(
 pub fn player_shoot(
     mut shoot_events: EventWriter<ShootEvent>,
     keyboard_input: Res<Input<KeyCode>>,
-    players: Query<(Entity, &WeaponSlots), With<Player>>,
-    weapons: Query<&Weapon>,
+    players: Query<Entity, With<Player>>,
 ) {
-    if !keyboard_input.pressed(KeyCode::Space) {
-        return;
-    }
-
-    for (player_entity, slots) in players.iter() {
-        for weapon_slot in slots.weapons.iter().filter(|slot| {
-            slot.weapon
-                .and_then(|weapon| {
-                    weapons
-                        .get(weapon)
-                        .ok()
-                        .filter(|weapon| weapon.cooldown().0.finished())
-                })
-                .is_some()
-        }) {
-            shoot_events.send(ShootEvent {
-                weapon_slot: weapon_slot.clone(),
-                shooter: player_entity,
-            });
+    if keyboard_input.pressed(KeyCode::Space) {
+        for shooter in players.iter() {
+            shoot_events.send(ShootEvent { shooter })
         }
     }
 }

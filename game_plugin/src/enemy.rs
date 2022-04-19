@@ -298,26 +298,8 @@ fn movement(
     }
 }
 
-fn enemy_shoot(
-    mut shoot_events: EventWriter<ShootEvent>,
-    enemies: Query<(Entity, &WeaponSlots), With<Enemy>>,
-    weapons: Query<&Weapon>,
-) {
-    for (shooter_entity, slots) in enemies.iter() {
-        for weapon_slot in slots.weapons.iter().filter(|slot| {
-            slot.weapon
-                .and_then(|weapon| {
-                    weapons
-                        .get(weapon)
-                        .ok()
-                        .filter(|weapon| weapon.cooldown().0.finished())
-                })
-                .is_some()
-        }) {
-            shoot_events.send(ShootEvent {
-                weapon_slot: weapon_slot.clone(),
-                shooter: shooter_entity,
-            });
-        }
+fn enemy_shoot(mut shoot_events: EventWriter<ShootEvent>, enemies: Query<Entity, With<Enemy>>) {
+    for shooter in enemies.iter() {
+        shoot_events.send(ShootEvent { shooter });
     }
 }

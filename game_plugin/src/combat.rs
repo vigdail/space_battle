@@ -18,7 +18,7 @@ use crate::{player::Player, Lifetime, Owner};
 
 #[cfg_attr(feature = "debug", derive(Inspectable))]
 #[derive(Debug, Default)]
-pub struct Cooldown(#[inspectable(ignore)] pub Timer);
+pub struct Cooldown(#[cfg_attr(feature = "debug", inspectable(ignore))] pub Timer);
 
 impl Cooldown {
     pub fn from_seconds(seconds: f32) -> Self {
@@ -99,6 +99,10 @@ pub struct WeaponSlots {
 }
 
 pub struct ShootEvent {
+    pub shooter: Entity,
+}
+
+pub struct SpawnBulletEvent {
     pub weapon_slot: WeaponSlot,
     pub shooter: Entity,
 }
@@ -151,12 +155,14 @@ impl Plugin for CombatPlugin {
             .register_inspectable::<Health>();
         app.add_event::<EquipWeaponEvent>()
             .add_event::<ShootEvent>()
+            .add_event::<SpawnBulletEvent>()
             .add_event::<Contact>()
             .add_system(equip_weapon)
             .add_system(handle_intersections)
             .add_system(handle_contacts)
             .add_system(despawn_dead)
             .add_system(update_cooldowns)
+            .add_system(handle_shoot_events)
             .add_system(spawn_bullets)
             .add_system(test_equip_weapon);
     }
@@ -285,13 +291,40 @@ pub fn equip_weapon(
     }
 }
 
+fn handle_shoot_events(
+    mut shoot_events: EventReader<ShootEvent>,
+    mut spawn_bullet_events: EventWriter<SpawnBulletEvent>,
+    weapon_slots: Query<&WeaponSlots>,
+    weapons: Query<&Weapon>,
+) {
+    for ShootEvent { shooter } in shoot_events.iter() {
+        if let Ok(slots) = weapon_slots.get(*shooter) {
+            for weapon_slot in slots.weapons.iter().filter(|slot| {
+                slot.weapon
+                    .and_then(|weapon| {
+                        weapons
+                            .get(weapon)
+                            .ok()
+                            .filter(|weapon| weapon.cooldown().0.finished())
+                    })
+                    .is_some()
+            }) {
+                spawn_bullet_events.send(SpawnBulletEvent {
+                    weapon_slot: weapon_slot.clone(),
+                    shooter: *shooter,
+                });
+            }
+        }
+    }
+}
+
 fn spawn_bullets(
     mut commands: Commands,
     rapier_config: Res<RapierConfiguration>,
-    mut events: EventReader<ShootEvent>,
+    mut events: EventReader<SpawnBulletEvent>,
     mut weapons: Query<(&mut Weapon, &GlobalTransform)>,
 ) {
-    for ShootEvent {
+    for SpawnBulletEvent {
         weapon_slot,
         shooter,
     } in events.iter()
