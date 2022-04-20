@@ -5,11 +5,15 @@ use crate::{combat::Scores, loading::FontAssets, player::Player, states::GameSta
 #[derive(Component)]
 pub struct PlayerScoresText;
 
+#[derive(Component)]
+pub struct GameUITag;
+
 pub struct GameUiPlugin;
 
 impl Plugin for GameUiPlugin {
     fn build(&self, app: &mut App) {
         app.add_system_set(SystemSet::on_enter(GameState::Gameplay).with_system(setup_ui))
+            .add_system_set(SystemSet::on_exit(GameState::Gameplay).with_system(despawn_ui))
             .add_system(display_scores);
     }
 }
@@ -19,7 +23,13 @@ fn display_scores(
     scores: Query<&Scores, (Changed<Scores>, With<Player>)>,
 ) {
     if let Some((scores, mut text)) = scores.get_single().ok().zip(text.get_single_mut().ok()) {
-        text.sections[0].value = format!("Score: {}", scores.amount.to_string());
+        text.sections[0].value = format!("Score: {}", scores.amount);
+    }
+}
+
+fn despawn_ui(mut commands: Commands, ui_query: Query<Entity, With<GameUITag>>) {
+    for ui in ui_query.iter() {
+        commands.entity(ui).despawn_recursive();
     }
 }
 
@@ -34,6 +44,7 @@ fn setup_ui(mut commands: Commands, fonts: Res<FontAssets>) {
             color: Color::NONE.into(),
             ..Default::default()
         })
+        .insert(GameUITag)
         .with_children(|parent| {
             parent
                 .spawn_bundle(NodeBundle {

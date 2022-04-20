@@ -1,3 +1,5 @@
+#![allow(clippy::type_complexity)]
+
 use bevy::{app::AppExit, prelude::*};
 #[cfg(feature = "debug")]
 use bevy_inspector_egui::{Inspectable, RegisterInspectable};
@@ -16,9 +18,9 @@ struct MainMenuTag;
 
 pub struct StartGameEvent;
 
-const NORMAL_BUTTON: Color = Color::rgb(0.25, 0.25, 0.25);
-const HOVERED_BUTTON: Color = Color::rgb(0.35, 0.35, 0.35);
-const PRESSED_BUTTON: Color = Color::rgb(0.45, 0.75, 0.45);
+pub const NORMAL_BUTTON: Color = Color::rgb(0.25, 0.25, 0.25);
+pub const HOVERED_BUTTON: Color = Color::rgb(0.35, 0.35, 0.35);
+pub const PRESSED_BUTTON: Color = Color::rgb(0.45, 0.75, 0.45);
 
 pub struct MainMenuPlugin;
 
@@ -29,39 +31,45 @@ impl Plugin for MainMenuPlugin {
         app.add_event::<StartGameEvent>()
             .add_system_set(SystemSet::on_enter(GameState::MainMenu).with_system(setup_main_menu))
             .add_system_set(
-                SystemSet::on_update(GameState::MainMenu)
-                    .with_system(button_system)
-                    .with_system(handle_start_game),
+                SystemSet::on_update(GameState::MainMenu).with_system(handle_button_click),
             )
+            .add_system(handle_start_game)
+            .add_system(button_color_system)
             .add_system_set(SystemSet::on_exit(GameState::MainMenu).with_system(despawn_main_menu));
     }
 }
 
-#[allow(clippy::type_complexity)]
-fn button_system(
+fn button_color_system(
     mut interaction_query: Query<
-        (&Interaction, &mut UiColor, &MenuButtonTag),
+        (&Interaction, &mut UiColor),
         (Changed<Interaction>, With<Button>),
     >,
-    mut start_game_events: EventWriter<StartGameEvent>,
-    mut exit_events: EventWriter<AppExit>,
 ) {
-    for (interaction, mut color, tag) in interaction_query.iter_mut() {
+    for (interaction, mut color) in interaction_query.iter_mut() {
         match *interaction {
             Interaction::Clicked => {
                 *color = PRESSED_BUTTON.into();
-                match tag {
-                    MenuButtonTag::Start => start_game_events.send(StartGameEvent),
-                    MenuButtonTag::Exit => {
-                        exit_events.send(AppExit);
-                    }
-                }
             }
             Interaction::Hovered => {
                 *color = HOVERED_BUTTON.into();
             }
             Interaction::None => {
                 *color = NORMAL_BUTTON.into();
+            }
+        }
+    }
+}
+
+fn handle_button_click(
+    interaction_query: Query<(&Interaction, &MenuButtonTag), (Changed<Interaction>, With<Button>)>,
+    mut start_game_events: EventWriter<StartGameEvent>,
+    mut exit_events: EventWriter<AppExit>,
+) {
+    for (interaction, tag) in interaction_query.iter() {
+        if let Interaction::Clicked = *interaction {
+            match tag {
+                MenuButtonTag::Start => start_game_events.send(StartGameEvent),
+                MenuButtonTag::Exit => exit_events.send(AppExit),
             }
         }
     }
@@ -75,6 +83,7 @@ fn handle_start_game(mut events: EventReader<StartGameEvent>, mut state: ResMut<
     }
 }
 
+// TODO: make a generic system for despaning ui
 fn despawn_main_menu(mut commands: Commands, menu_query: Query<Entity, With<MainMenuTag>>) {
     for menu in menu_query.iter() {
         commands.entity(menu).despawn_recursive();

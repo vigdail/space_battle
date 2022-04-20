@@ -1,3 +1,5 @@
+#![allow(clippy::type_complexity)]
+
 use bevy::prelude::*;
 #[cfg(feature = "debug")]
 use bevy_inspector_egui::{Inspectable, RegisterInspectable};
@@ -21,7 +23,9 @@ pub struct Player {
     pub speed: f32,
 }
 
-pub struct GameOverEvent;
+pub struct GameOverEvent {
+    pub scores: u32,
+}
 
 pub struct PlayerPlugin;
 
@@ -104,10 +108,14 @@ fn spawn_player(mut commands: Commands, rapier_config: Res<RapierConfiguration>)
 
 pub fn track_player_dead(
     mut game_over_events: EventWriter<GameOverEvent>,
-    players: Query<&Health, (With<Player>, Changed<Health>)>,
+    players: Query<(&Health, Option<&Scores>), (With<Player>, Changed<Health>)>,
 ) {
-    if players.iter().next().is_some() && players.iter().all(|health| health.is_dead()) {
-        game_over_events.send(GameOverEvent);
+    if let Ok((health, scores)) = players.get_single() {
+        if health.is_dead() {
+            game_over_events.send(GameOverEvent {
+                scores: scores.map(|scores| scores.amount).unwrap_or(0),
+            });
+        }
     }
 }
 
