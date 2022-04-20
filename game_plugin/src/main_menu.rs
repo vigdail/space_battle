@@ -37,6 +37,7 @@ impl Plugin for MainMenuPlugin {
     }
 }
 
+#[allow(clippy::type_complexity)]
 fn button_system(
     mut interaction_query: Query<
         (&Interaction, &mut UiColor, &MenuButtonTag),
@@ -81,7 +82,6 @@ fn despawn_main_menu(mut commands: Commands, menu_query: Query<Entity, With<Main
 }
 
 fn setup_main_menu(mut commands: Commands, fonts: Res<FontAssets>) {
-    commands.spawn_bundle(UiCameraBundle::default());
     let font = fonts.font.clone();
 
     commands
@@ -127,8 +127,7 @@ fn spawn_button(parent: &mut ChildBuilder, text: &str, tag: MenuButtonTag, font:
                     TextStyle {
                         font,
                         font_size: 40.0,
-                        color: Color::BLACK.into(),
-                        ..Default::default()
+                        color: Color::BLACK,
                     },
                     Default::default(),
                 ),

@@ -30,7 +30,7 @@ impl Plugin for PlayerPlugin {
         #[cfg(feature = "debug")]
         app.register_inspectable::<Player>();
         app.add_event::<GameOverEvent>()
-            .add_system_set(SystemSet::on_enter(GameState::Gameplay).with_system(spawn_player))
+            .add_system_set(SystemSet::on_enter(GameState::Countdown).with_system(spawn_player))
             .add_system_set(
                 SystemSet::on_update(GameState::Gameplay)
                     .with_system(player_movement)
@@ -68,6 +68,7 @@ fn spawn_player(mut commands: Commands, rapier_config: Res<RapierConfiguration>)
                 ..Default::default()
             }
             .into(),
+            position: [0.0, -150.0].into(),
             forces: RigidBodyForces {
                 gravity_scale: 0.0,
                 ..Default::default()

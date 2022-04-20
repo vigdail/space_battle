@@ -51,7 +51,7 @@ impl Plugin for GamePlugin {
             .add_plugin(CombatPlugin)
             .add_plugin(EnemyPlugin)
             .add_startup_system(spawn_bounds)
-            .add_startup_system(spawn_camera)
+            .add_startup_system(spawn_cameras)
             .add_system(track_lifetime);
     }
 
@@ -101,8 +101,9 @@ fn spawn_bounds(
     }
 }
 
-fn spawn_camera(mut commands: Commands) {
+fn spawn_cameras(mut commands: Commands) {
     commands.spawn_bundle(OrthographicCameraBundle::new_2d());
+    commands.spawn_bundle(UiCameraBundle::default());
 }
 
 pub fn track_lifetime(
