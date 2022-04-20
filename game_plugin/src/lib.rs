@@ -2,6 +2,7 @@ mod combat;
 mod countdown;
 mod enemy;
 mod game_over;
+mod game_ui;
 mod loading;
 mod main_menu;
 mod player;
@@ -20,6 +21,7 @@ use combat::CombatPlugin;
 use countdown::CountdownPlugin;
 use enemy::EnemyPlugin;
 use game_over::GameOverPlugin;
+use game_ui::GameUiPlugin;
 use loading::LoadingPlugin;
 use main_menu::MainMenuPlugin;
 use player::PlayerPlugin;
@@ -50,6 +52,7 @@ impl Plugin for GamePlugin {
             .add_plugin(PlayerPlugin)
             .add_plugin(CombatPlugin)
             .add_plugin(EnemyPlugin)
+            .add_plugin(GameUiPlugin)
             .add_startup_system(spawn_bounds)
             .add_startup_system(spawn_cameras)
             .add_system(track_lifetime);

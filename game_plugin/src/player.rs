@@ -11,7 +11,7 @@ use bevy_rapier2d::{
 };
 
 use crate::{
-    combat::{Health, Radian, ShootEvent, WeaponSlot, WeaponSlots},
+    combat::{Health, Radian, Scores, ShootEvent, WeaponSlot, WeaponSlots},
     states::GameState,
 };
 
@@ -98,7 +98,8 @@ fn spawn_player(mut commands: Commands, rapier_config: Res<RapierConfiguration>)
                     angle: Radian::from_deg(45.0),
                 },
             ],
-        });
+        })
+        .insert(Scores::default());
 }
 
 pub fn track_player_dead(

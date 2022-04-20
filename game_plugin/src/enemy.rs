@@ -11,7 +11,7 @@ use bevy_rapier2d::{
 use rand::prelude::random;
 
 use crate::{
-    combat::{Cooldown, Health, Radian, ShootEvent, Weapon, WeaponSlot, WeaponSlots},
+    combat::{Cooldown, Health, Loot, Radian, ShootEvent, Weapon, WeaponSlot, WeaponSlots},
     player::Player,
     states::GameState,
 };
@@ -211,6 +211,7 @@ fn spawn_enemy(
             .insert(movement)
             .insert(Name::new("Enemy"))
             .insert(weapon_slots)
+            .insert(Loot { score: 1 })
             .add_child(weapon_entity);
     };
 

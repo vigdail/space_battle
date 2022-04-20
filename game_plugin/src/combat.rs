@@ -17,6 +17,23 @@ use bevy_rapier2d::{
 use crate::{player::Player, Lifetime, Owner};
 
 #[cfg_attr(feature = "debug", derive(Inspectable))]
+#[derive(Debug, Default, Component)]
+pub struct Scores {
+    pub amount: u32,
+}
+
+// TODO: Which entity to reward
+pub struct RewardEvent {
+    pub score: u32,
+}
+
+#[cfg_attr(feature = "debug", derive(Inspectable))]
+#[derive(Debug, Component)]
+pub struct Loot {
+    pub score: u32,
+}
+
+#[cfg_attr(feature = "debug", derive(Inspectable))]
 #[derive(Debug, Default)]
 pub struct Cooldown(#[cfg_attr(feature = "debug", inspectable(ignore))] pub Timer);
 
@@ -66,7 +83,7 @@ impl Radian {
     }
 
     pub fn from_deg(deg: f32) -> Radian {
-        Self(deg * Self::PI / 180.0)
+        Self(deg.to_radians())
     }
 
     pub fn cos(&self) -> f32 {
@@ -152,10 +169,12 @@ impl Plugin for CombatPlugin {
             .register_inspectable::<WeaponSlot>()
             .register_inspectable::<WeaponSlots>()
             .register_inspectable::<Bullet>()
+            .register_inspectable::<Loot>()
             .register_inspectable::<Health>();
         app.add_event::<EquipWeaponEvent>()
             .add_event::<ShootEvent>()
             .add_event::<SpawnBulletEvent>()
+            .add_event::<RewardEvent>()
             .add_event::<Contact>()
             .add_system(equip_weapon)
             .add_system(handle_intersections)
@@ -164,6 +183,7 @@ impl Plugin for CombatPlugin {
             .add_system(update_cooldowns)
             .add_system(handle_shoot_events)
             .add_system(spawn_bullets)
+            .add_system(apply_score_reward)
             .add_system(test_equip_weapon);
     }
 }
@@ -199,11 +219,11 @@ pub fn handle_intersections(
 
 pub fn handle_contacts(
     mut commands: Commands,
-    mut events: EventReader<Contact>,
+    mut contact_events: EventReader<Contact>,
     mut healths: Query<&mut Health>,
     bullets: Query<&Bullet>,
 ) {
-    for event in events.iter() {
+    for event in contact_events.iter() {
         match *event {
             Contact::HealthBullet(health_entity, bullet_entity) => {
                 if let Some((mut health, bullet)) = healths
@@ -219,9 +239,16 @@ pub fn handle_contacts(
     }
 }
 
-pub fn despawn_dead(mut commands: Commands, healths: Query<(Entity, &Health), Changed<Health>>) {
-    for (entity, health) in healths.iter() {
+pub fn despawn_dead(
+    mut commands: Commands,
+    mut reward_events: EventWriter<RewardEvent>,
+    healths: Query<(Entity, &Health, Option<&Loot>), Changed<Health>>,
+) {
+    for (entity, health, loot) in healths.iter() {
         if health.is_dead() {
+            if let Some(loot) = loot {
+                reward_events.send(RewardEvent { score: loot.score });
+            }
             commands.entity(entity).despawn_recursive();
         }
     }
@@ -383,6 +410,17 @@ fn spawn_bullets(
                 .insert_bundle(collider)
                 .insert(RigidBodyPositionSync::Discrete)
                 .insert(Owner { entity: *shooter });
+        }
+    }
+}
+
+fn apply_score_reward(
+    mut reward_events: EventReader<RewardEvent>,
+    mut players: Query<&mut Scores, With<Player>>,
+) {
+    for RewardEvent { score } in reward_events.iter() {
+        for mut scores in players.iter_mut() {
+            scores.amount += score;
         }
     }
 }
