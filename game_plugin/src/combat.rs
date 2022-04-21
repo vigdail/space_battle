@@ -1,6 +1,10 @@
 use std::time::Duration;
 
-use bevy::prelude::*;
+use bevy::{
+    asset::{AssetLoader, LoadedAsset},
+    prelude::*,
+    reflect::TypeUuid,
+};
 #[cfg(feature = "debug")]
 use bevy_inspector_egui::{Inspectable, RegisterInspectable};
 use bevy_rapier2d::{
@@ -13,6 +17,7 @@ use bevy_rapier2d::{
         RigidBodyVelocity,
     },
 };
+use serde::{Deserialize, Serialize};
 
 use crate::{player::Player, Lifetime, Owner};
 
@@ -28,7 +33,7 @@ pub struct RewardEvent {
 }
 
 #[cfg_attr(feature = "debug", derive(Inspectable))]
-#[derive(Debug, Component)]
+#[derive(Debug, Default, Component, Clone, Serialize, Deserialize)]
 pub struct Loot {
     pub score: u32,
 }
@@ -46,11 +51,11 @@ impl Cooldown {
 #[cfg_attr(feature = "debug", derive(Inspectable))]
 #[derive(Component, Debug)]
 pub enum Weapon {
-    Laser { damage: f32, cooldown: Cooldown },
+    Laser { damage: u32, cooldown: Cooldown },
 }
 
 impl Weapon {
-    pub fn damage(&self) -> f32 {
+    pub fn damage(&self) -> u32 {
         match self {
             Weapon::Laser { damage, .. } => *damage,
         }
@@ -70,47 +75,15 @@ impl Weapon {
 }
 
 #[cfg_attr(feature = "debug", derive(Inspectable))]
-#[derive(Default, Copy, Clone)]
-pub struct Radian(f32);
-
-impl Radian {
-    const PI: f32 = std::f32::consts::PI;
-    pub fn up() -> Self {
-        Self(Self::PI / 2.0)
-    }
-    pub fn down() -> Self {
-        Self(Self::PI * 3.0 / 2.0)
-    }
-
-    pub fn from_deg(deg: f32) -> Radian {
-        Self(deg.to_radians())
-    }
-
-    pub fn cos(&self) -> f32 {
-        self.0.cos()
-    }
-
-    pub fn sin(&self) -> f32 {
-        self.0.sin()
-    }
-}
-
-impl From<Radian> for f32 {
-    fn from(rad: Radian) -> Self {
-        rad.0
-    }
-}
-
-#[cfg_attr(feature = "debug", derive(Inspectable))]
-#[derive(Default, Clone)]
+#[derive(Default, Clone, Serialize, Deserialize)]
 pub struct WeaponSlot {
     pub weapon: Option<Entity>,
     pub position: Vec2,
-    pub angle: Radian,
+    pub angle: f32,
 }
 
 #[cfg_attr(feature = "debug", derive(Inspectable))]
-#[derive(Component)]
+#[derive(Component, Serialize, Deserialize, Clone)]
 pub struct WeaponSlots {
     pub weapons: Vec<WeaponSlot>,
 }
@@ -131,18 +104,18 @@ pub enum Contact {
 #[cfg_attr(feature = "debug", derive(Inspectable))]
 #[derive(Component)]
 pub struct Bullet {
-    pub damage: f32,
+    pub damage: u32,
 }
 
 #[cfg_attr(feature = "debug", derive(Inspectable))]
 #[derive(Component)]
 pub struct Health {
-    pub current: f32,
-    pub max: f32,
+    pub current: u32,
+    pub max: u32,
 }
 
 impl Health {
-    pub fn new(amount: f32) -> Self {
+    pub fn new(amount: u32) -> Self {
         Self {
             current: amount,
             max: amount,
@@ -150,7 +123,37 @@ impl Health {
     }
 
     pub fn is_dead(&self) -> bool {
-        self.current <= 0.0
+        self.current == 0
+    }
+}
+
+#[derive(Serialize, Deserialize, TypeUuid)]
+#[uuid = "57f9ff4b-f4d1-4e51-9572-483113a861c9"]
+pub struct UnitDefs {
+    pub name: String,
+    pub health: u32,
+    pub weapon_slots: WeaponSlots,
+    pub loot: Loot,
+}
+
+#[derive(Default)]
+pub struct UnitDefsLoader;
+
+impl AssetLoader for UnitDefsLoader {
+    fn load<'a>(
+        &'a self,
+        bytes: &'a [u8],
+        load_context: &'a mut bevy::asset::LoadContext,
+    ) -> bevy::asset::BoxedFuture<'a, Result<(), anyhow::Error>> {
+        Box::pin(async move {
+            let custom_asset = ron::de::from_bytes::<UnitDefs>(bytes)?;
+            load_context.set_default_asset(LoadedAsset::new(custom_asset));
+            Ok(())
+        })
+    }
+
+    fn extensions(&self) -> &[&str] {
+        &["ron"]
     }
 }
 
@@ -171,7 +174,9 @@ impl Plugin for CombatPlugin {
             .register_inspectable::<Bullet>()
             .register_inspectable::<Loot>()
             .register_inspectable::<Health>();
-        app.add_event::<EquipWeaponEvent>()
+        app.add_asset::<UnitDefs>()
+            .init_asset_loader::<UnitDefsLoader>()
+            .add_event::<EquipWeaponEvent>()
             .add_event::<ShootEvent>()
             .add_event::<SpawnBulletEvent>()
             .add_event::<RewardEvent>()
@@ -231,7 +236,7 @@ pub fn handle_contacts(
                     .ok()
                     .zip(bullets.get(bullet_entity).ok())
                 {
-                    health.current -= bullet.damage;
+                    health.current = health.current.saturating_sub(bullet.damage);
                 }
                 commands.entity(bullet_entity).despawn();
             }
@@ -283,7 +288,7 @@ pub fn test_equip_weapon(
                         ..Default::default()
                     })
                     .insert(Weapon::Laser {
-                        damage: 1.0,
+                        damage: 1,
                         cooldown: Cooldown::from_seconds(0.2),
                     })
                     .insert(Name::new(format!("Weapon {}", slot_index)))

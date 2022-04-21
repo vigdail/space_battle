@@ -13,7 +13,7 @@ use bevy_rapier2d::{
 };
 
 use crate::{
-    combat::{Health, Radian, Scores, ShootEvent, WeaponSlot, WeaponSlots},
+    combat::{Health, Scores, ShootEvent, WeaponSlot, WeaponSlots},
     states::GameState,
 };
 
@@ -82,24 +82,24 @@ fn spawn_player(mut commands: Commands, rapier_config: Res<RapierConfiguration>)
         })
         .insert(ColliderPositionSync::Discrete)
         .insert(Player { speed: 200.0 })
-        .insert(Health::new(1.0))
+        .insert(Health::new(1))
         .insert(Name::new("Player"))
         .insert(WeaponSlots {
             weapons: vec![
                 WeaponSlot {
                     weapon: None,
                     position: Vec2::new(0.0, 20.0),
-                    angle: Radian::up(),
+                    angle: 90.0f32.to_radians(),
                 },
                 WeaponSlot {
                     weapon: None,
                     position: Vec2::new(-15.0, 20.0),
-                    angle: Radian::up(),
+                    angle: 90.0f32.to_radians(),
                 },
                 WeaponSlot {
                     weapon: None,
                     position: Vec2::new(15.0, 20.0),
-                    angle: Radian::from_deg(45.0),
+                    angle: 45.0f32.to_radians(),
                 },
             ],
         })

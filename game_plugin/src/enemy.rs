@@ -11,8 +11,9 @@ use bevy_rapier2d::{
 use rand::prelude::random;
 
 use crate::{
-    combat::{Cooldown, Health, Loot, Radian, ShootEvent, Weapon, WeaponSlot, WeaponSlots},
+    combat::{Cooldown, Health, ShootEvent, UnitDefs, Weapon},
     despawn_with,
+    loading::UnitAssets,
     player::Player,
     states::GameState,
 };
@@ -131,9 +132,12 @@ fn count_enemies(mut events: EventWriter<SpawnEnemyEvent>, enemies: Query<&Enemy
 fn spawn_enemy(
     mut commands: Commands,
     rapier_config: Res<RapierConfiguration>,
+    unit_handles: Res<UnitAssets>,
+    units: Res<Assets<UnitDefs>>,
     mut events: EventReader<SpawnEnemyEvent>,
 ) {
     let mut spawn = || {
+        let unit = units.get(&unit_handles.dragon).unwrap();
         let position = Vec2::new(random::<f32>() * 400.0 - 200.0, random::<f32>() * 200.0);
         let size = Vec2::splat(32.0);
         let collider_size = size / rapier_config.scale;
@@ -159,31 +163,32 @@ fn spawn_enemy(
             ..Default::default()
         };
 
-        let weapon_entity = commands
-            .spawn()
-            .insert_bundle(SpriteBundle {
-                sprite: Sprite {
-                    color: Color::GREEN,
-                    custom_size: Some(Vec2::splat(8.0)),
-                    ..Default::default()
-                },
-                ..Default::default()
+        let mut weapon_slots = unit.weapon_slots.clone();
+        let weapons = weapon_slots
+            .weapons
+            .iter_mut()
+            .map(|mut slot| {
+                let weapon_entity = commands
+                    .spawn()
+                    .insert_bundle(SpriteBundle {
+                        sprite: Sprite {
+                            color: Color::GREEN,
+                            custom_size: Some(Vec2::splat(8.0)),
+                            ..Default::default()
+                        },
+                        ..Default::default()
+                    })
+                    .insert(Weapon::Laser {
+                        damage: 1,
+                        cooldown: Cooldown::from_seconds(1.0),
+                    })
+                    .insert(Name::new("Laser"))
+                    .insert(Transform::from_xyz(slot.position.x, slot.position.y, 0.0))
+                    .id();
+                slot.weapon = Some(weapon_entity);
+                weapon_entity
             })
-            .insert(Weapon::Laser {
-                damage: 1.0,
-                cooldown: Cooldown::from_seconds(1.0),
-            })
-            .insert(Name::new("Laser"))
-            .insert(Transform::from_xyz(0.0, 20.0, 0.0))
-            .id();
-
-        let weapon_slots = WeaponSlots {
-            weapons: vec![WeaponSlot {
-                weapon: Some(weapon_entity),
-                position: Vec2::new(0.0, 20.0),
-                angle: Radian::down(),
-            }],
-        };
+            .collect::<Vec<_>>();
 
         let movement = if random::<bool>() {
             Movement::Horizontal {
@@ -211,13 +216,13 @@ fn spawn_enemy(
             .insert_bundle(collider)
             .insert_bundle(rigidbody)
             .insert(RigidBodyPositionSync::Discrete)
-            .insert(Health::new(3.0))
             .insert(Enemy)
             .insert(movement)
-            .insert(Name::new("Enemy"))
+            .insert(Health::new(unit.health))
+            .insert(Name::new(unit.name.clone()))
             .insert(weapon_slots)
-            .insert(Loot { score: 1 })
-            .add_child(weapon_entity);
+            .insert(unit.loot.clone())
+            .insert_children(0, &weapons);
     };
 
     for _ in events.iter() {

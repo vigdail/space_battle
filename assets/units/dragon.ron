@@ -1,0 +1,15 @@
+UnitDefs(
+	name: "Dragon",
+	health: 3,
+	loot: (
+		score: 1,
+	),
+	weapon_slots: (
+		weapons: [
+			(
+				position: (0.0, 20.0),
+				angle: -1.57,
+			),
+		]
+	)
+)
