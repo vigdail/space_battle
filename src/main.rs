@@ -10,8 +10,8 @@ use game_plugin::GamePlugin;
 fn main() {
     let mut app = App::new();
     app.insert_resource(WindowDescriptor {
-        width: 800.0,
-        height: 600.0,
+        width: 1280.0,
+        height: 720.0,
         resizable: false,
         ..Default::default()
     })
