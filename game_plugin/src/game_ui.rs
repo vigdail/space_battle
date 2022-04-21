@@ -1,6 +1,12 @@
 use bevy::prelude::*;
 
-use crate::{combat::Scores, loading::FontAssets, player::Player, states::GameState};
+use crate::{
+    combat::Scores,
+    loading::FontAssets,
+    main_menu::{hide_ui, show_ui},
+    player::Player,
+    states::GameState,
+};
 
 #[derive(Component)]
 pub struct PlayerScoresText;
@@ -12,9 +18,12 @@ pub struct GameUiPlugin;
 
 impl Plugin for GameUiPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system_set(SystemSet::on_enter(GameState::Gameplay).with_system(setup_ui))
-            .add_system_set(SystemSet::on_exit(GameState::Gameplay).with_system(despawn_ui))
-            .add_system(display_scores);
+        app.add_system_set(
+            SystemSet::on_enter(GameState::Gameplay).with_system(show_ui::<GameUITag>),
+        )
+        .add_system_set(SystemSet::on_exit(GameState::Gameplay).with_system(hide_ui::<GameUITag>))
+        .add_system_set(SystemSet::on_exit(GameState::Loading).with_system(setup_ui))
+        .add_system(display_scores);
     }
 }
 
@@ -27,24 +36,21 @@ fn display_scores(
     }
 }
 
-fn despawn_ui(mut commands: Commands, ui_query: Query<Entity, With<GameUITag>>) {
-    for ui in ui_query.iter() {
-        commands.entity(ui).despawn_recursive();
-    }
-}
-
 fn setup_ui(mut commands: Commands, fonts: Res<FontAssets>) {
     commands
         .spawn_bundle(NodeBundle {
             style: Style {
                 size: Size::new(Val::Percent(100.0), Val::Percent(100.0)),
                 flex_direction: FlexDirection::ColumnReverse,
+                position_type: PositionType::Absolute,
+                display: Display::None,
                 ..Default::default()
             },
             color: Color::NONE.into(),
             ..Default::default()
         })
         .insert(GameUITag)
+        .insert(Name::new("Game UI"))
         .with_children(|parent| {
             parent
                 .spawn_bundle(NodeBundle {

@@ -2,7 +2,11 @@ use std::time::Duration;
 
 use bevy::prelude::*;
 
-use crate::{loading::FontAssets, states::GameState};
+use crate::{
+    loading::FontAssets,
+    main_menu::{hide_ui, show_ui},
+    states::GameState,
+};
 
 #[derive(Component)]
 struct CountdownUITag;
@@ -22,17 +26,24 @@ pub struct CountdownPlugin;
 
 impl Plugin for CountdownPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system_set(SystemSet::on_enter(GameState::Countdown).with_system(setup_countdown))
-            .add_system_set(SystemSet::on_update(GameState::Countdown).with_system(track_countdown))
-            .add_system_set(
-                SystemSet::on_exit(GameState::Countdown).with_system(despawn_countdown_ui),
-            );
+        app.add_system_set(
+            SystemSet::on_enter(GameState::Countdown)
+                .with_system(setup_countdown)
+                .with_system(show_ui::<CountdownUITag>),
+        )
+        .add_system_set(SystemSet::on_update(GameState::Countdown).with_system(track_countdown))
+        .add_system_set(
+            SystemSet::on_exit(GameState::Countdown).with_system(hide_ui::<CountdownUITag>),
+        )
+        .add_system_set(SystemSet::on_exit(GameState::Loading).with_system(spawn_ui));
     }
 }
 
-fn setup_countdown(mut commands: Commands, fonts: Res<FontAssets>) {
+fn setup_countdown(mut commands: Commands) {
     commands.insert_resource(CountdownTimer::from_seconds(3.0));
+}
 
+fn spawn_ui(mut commands: Commands, fonts: Res<FontAssets>) {
     commands
         .spawn_bundle(NodeBundle {
             style: Style {
@@ -40,6 +51,8 @@ fn setup_countdown(mut commands: Commands, fonts: Res<FontAssets>) {
                 justify_content: JustifyContent::Center,
                 align_items: AlignItems::Center,
                 flex_direction: FlexDirection::ColumnReverse,
+                position_type: PositionType::Absolute,
+                display: Display::None,
                 ..Default::default()
             },
             color: Color::rgba(0.0, 0.0, 0.0, 0.5).into(),
@@ -65,13 +78,8 @@ fn setup_countdown(mut commands: Commands, fonts: Res<FontAssets>) {
                 })
                 .insert(CountdownText);
         })
-        .insert(CountdownUITag);
-}
-
-fn despawn_countdown_ui(mut commands: Commands, ui: Query<Entity, With<CountdownUITag>>) {
-    for entity in ui.iter() {
-        commands.entity(entity).despawn_recursive();
-    }
+        .insert(CountdownUITag)
+        .insert(Name::new("Countdown UI"));
 }
 
 fn track_countdown(

@@ -29,13 +29,18 @@ impl Plugin for MainMenuPlugin {
         #[cfg(feature = "debug")]
         app.register_inspectable::<MenuButtonTag>();
         app.add_event::<StartGameEvent>()
-            .add_system_set(SystemSet::on_enter(GameState::MainMenu).with_system(setup_main_menu))
+            .add_system_set(
+                SystemSet::on_enter(GameState::MainMenu).with_system(show_ui::<MainMenuTag>),
+            )
             .add_system_set(
                 SystemSet::on_update(GameState::MainMenu).with_system(handle_button_click),
             )
+            .add_system_set(
+                SystemSet::on_exit(GameState::MainMenu).with_system(hide_ui::<MainMenuTag>),
+            )
+            .add_system_set(SystemSet::on_exit(GameState::Loading).with_system(setup_main_menu))
             .add_system(handle_start_game)
-            .add_system(button_color_system)
-            .add_system_set(SystemSet::on_exit(GameState::MainMenu).with_system(despawn_main_menu));
+            .add_system(button_color_system);
     }
 }
 
@@ -75,18 +80,23 @@ fn handle_button_click(
     }
 }
 
+pub fn show_ui<T: Component>(mut ui: Query<&mut Style, With<T>>) {
+    for mut style in ui.iter_mut() {
+        style.display = Display::Flex;
+    }
+}
+
+pub fn hide_ui<T: Component>(mut ui: Query<&mut Style, With<T>>) {
+    for mut style in ui.iter_mut() {
+        style.display = Display::None;
+    }
+}
+
 fn handle_start_game(mut events: EventReader<StartGameEvent>, mut state: ResMut<State<GameState>>) {
     if events.iter().next().is_some() {
         state
             .set(GameState::Countdown)
             .expect("Unable to change state to Gameplay");
-    }
-}
-
-// TODO: make a generic system for despaning ui
-fn despawn_main_menu(mut commands: Commands, menu_query: Query<Entity, With<MainMenuTag>>) {
-    for menu in menu_query.iter() {
-        commands.entity(menu).despawn_recursive();
     }
 }
 
@@ -99,6 +109,8 @@ fn setup_main_menu(mut commands: Commands, fonts: Res<FontAssets>) {
                 size: Size::new(Val::Percent(100.0), Val::Percent(100.0)),
                 justify_content: JustifyContent::Center,
                 flex_direction: FlexDirection::ColumnReverse,
+                display: Display::None,
+                position_type: PositionType::Absolute,
                 ..Default::default()
             },
             color: Color::NONE.into(),
@@ -108,7 +120,8 @@ fn setup_main_menu(mut commands: Commands, fonts: Res<FontAssets>) {
             spawn_button(parent, "Start", MenuButtonTag::Start, font.clone());
             spawn_button(parent, "Exit", MenuButtonTag::Exit, font);
         })
-        .insert(MainMenuTag);
+        .insert(MainMenuTag)
+        .insert(Name::new("Main Menu UI"));
 }
 
 fn spawn_button(parent: &mut ChildBuilder, text: &str, tag: MenuButtonTag, font: Handle<Font>) {

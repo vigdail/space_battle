@@ -3,7 +3,7 @@ use bevy::{app::AppExit, prelude::*};
 
 use crate::{
     loading::FontAssets,
-    main_menu::{StartGameEvent, NORMAL_BUTTON},
+    main_menu::{hide_ui, show_ui, StartGameEvent, NORMAL_BUTTON},
     states::GameState,
 };
 
@@ -32,11 +32,14 @@ pub struct GameOverPlugin;
 
 impl Plugin for GameOverPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system_set(SystemSet::on_enter(GameState::GameOver).with_system(setup_ui))
-            .add_system_set(
-                SystemSet::on_update(GameState::GameOver).with_system(handle_button_click),
-            )
-            .add_system_set(SystemSet::on_exit(GameState::GameOver).with_system(despawn_ui));
+        app.add_system_set(
+            SystemSet::on_enter(GameState::GameOver).with_system(show_ui::<GameOverMenu>),
+        )
+        .add_system_set(SystemSet::on_update(GameState::GameOver).with_system(handle_button_click))
+        .add_system_set(
+            SystemSet::on_exit(GameState::GameOver).with_system(hide_ui::<GameOverMenu>),
+        )
+        .add_system_set(SystemSet::on_exit(GameState::Loading).with_system(setup_ui));
     }
 }
 
@@ -55,12 +58,6 @@ fn handle_button_click(
     }
 }
 
-fn despawn_ui(mut commands: Commands, menu_query: Query<Entity, With<GameOverMenu>>) {
-    for menu in menu_query.iter() {
-        commands.entity(menu).despawn_recursive();
-    }
-}
-
 fn setup_ui(mut commands: Commands, fonts: Res<FontAssets>) {
     commands
         .spawn_bundle(NodeBundle {
@@ -69,12 +66,15 @@ fn setup_ui(mut commands: Commands, fonts: Res<FontAssets>) {
                 flex_direction: FlexDirection::ColumnReverse,
                 align_items: AlignItems::Center,
                 justify_content: JustifyContent::Center,
+                display: Display::None,
+                position_type: PositionType::Absolute,
                 ..Default::default()
             },
             color: Color::rgba(0.0, 0.0, 0.0, 0.5).into(),
             ..Default::default()
         })
         .insert(GameOverMenu)
+        .insert(Name::new("Game Over UI"))
         .with_children(|parent| {
             parent.spawn_bundle(TextBundle {
                 text: Text::with_section(
