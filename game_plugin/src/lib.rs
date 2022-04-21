@@ -63,6 +63,12 @@ impl Plugin for GamePlugin {
     }
 }
 
+pub fn despawn_with<T: Component>(mut commands: Commands, query: Query<Entity, With<T>>) {
+    for entity in query.iter() {
+        commands.entity(entity).despawn_recursive();
+    }
+}
+
 fn spawn_bounds(
     mut commands: Commands,
     window: Res<WindowDescriptor>,

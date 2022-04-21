@@ -12,6 +12,7 @@ use rand::prelude::random;
 
 use crate::{
     combat::{Cooldown, Health, Loot, Radian, ShootEvent, Weapon, WeaponSlot, WeaponSlots},
+    despawn_with,
     player::Player,
     states::GameState,
 };
@@ -103,14 +104,18 @@ impl Plugin for EnemyPlugin {
         app.register_inspectable::<Enemy>()
             .register_inspectable::<Dir>()
             .register_inspectable::<Movement>();
-        app.add_event::<SpawnEnemyEvent>().add_system_set(
-            SystemSet::on_update(GameState::Gameplay)
-                .with_system(count_enemies.label(COUNT_ENEMIES_LABEL))
-                .with_system(spawn_enemy.after(COUNT_ENEMIES_LABEL))
-                .with_system(movement)
-                .with_system(enemy_shoot)
-                .with_system(test_chase),
-        );
+        app.add_event::<SpawnEnemyEvent>()
+            .add_system_set(
+                SystemSet::on_update(GameState::Gameplay)
+                    .with_system(count_enemies.label(COUNT_ENEMIES_LABEL))
+                    .with_system(spawn_enemy.after(COUNT_ENEMIES_LABEL))
+                    .with_system(movement)
+                    .with_system(enemy_shoot)
+                    .with_system(test_chase),
+            )
+            .add_system_set(
+                SystemSet::on_enter(GameState::Countdown).with_system(despawn_with::<Enemy>),
+            );
     }
 }
 
