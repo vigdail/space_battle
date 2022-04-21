@@ -150,7 +150,7 @@ fn spawn_enemy(
 
         let rigidbody = RigidBodyBundle {
             body_type: RigidBodyType::KinematicPositionBased.into(),
-            position: position.into(),
+            position: (position, 180.0f32.to_radians()).into(),
             mass_properties: RigidBodyMassProps {
                 flags: RigidBodyMassPropsFlags::ROTATION_LOCKED,
                 ..Default::default()
@@ -174,13 +174,13 @@ fn spawn_enemy(
                 cooldown: Cooldown::from_seconds(1.0),
             })
             .insert(Name::new("Laser"))
-            .insert(Transform::from_xyz(0.0, -20.0, 0.0))
+            .insert(Transform::from_xyz(0.0, 20.0, 0.0))
             .id();
 
         let weapon_slots = WeaponSlots {
             weapons: vec![WeaponSlot {
                 weapon: Some(weapon_entity),
-                position: Vec2::new(0.0, -20.0),
+                position: Vec2::new(0.0, 20.0),
                 angle: Radian::down(),
             }],
         };
@@ -300,7 +300,7 @@ fn movement(
                     RotationDir::CounterClockwise => -1.0,
                 };
                 *current_angle += dir * time.delta_seconds() * angular_speed;
-                position.next_position = [x, y].into();
+                position.next_position.translation = [x, y].into();
             }
             Movement::Static => {}
         }
