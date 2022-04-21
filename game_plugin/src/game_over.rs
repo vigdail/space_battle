@@ -4,6 +4,7 @@ use bevy::{app::AppExit, prelude::*};
 use crate::{
     loading::FontAssets,
     main_menu::{hide_ui, show_ui, StartGameEvent, NORMAL_BUTTON},
+    player::GameOverEvent,
     states::GameState,
 };
 
@@ -14,7 +15,7 @@ pub enum GameOverButton {
 }
 
 #[derive(Component)]
-struct ScoresText;
+struct ScoreText;
 
 #[derive(Component)]
 pub struct GameOverMenu;
@@ -39,7 +40,19 @@ impl Plugin for GameOverPlugin {
         .add_system_set(
             SystemSet::on_exit(GameState::GameOver).with_system(hide_ui::<GameOverMenu>),
         )
-        .add_system_set(SystemSet::on_exit(GameState::Loading).with_system(setup_ui));
+        .add_system_set(SystemSet::on_exit(GameState::Loading).with_system(setup_ui))
+        .add_system(handle_game_over_events);
+    }
+}
+
+fn handle_game_over_events(
+    mut events: EventReader<GameOverEvent>,
+    mut score_text: Query<&mut Text, With<ScoreText>>,
+) {
+    for GameOverEvent { score } in events.iter() {
+        if let Ok(mut text) = score_text.get_single_mut() {
+            text.sections[0].value = format!("Scores: {}", score);
+        }
     }
 }
 
@@ -107,7 +120,7 @@ fn setup_ui(mut commands: Commands, fonts: Res<FontAssets>) {
                     ),
                     ..Default::default()
                 })
-                .insert(ScoresText);
+                .insert(ScoreText);
             parent
                 .spawn_bundle(NodeBundle {
                     style: Style {

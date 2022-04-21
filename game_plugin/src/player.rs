@@ -24,7 +24,7 @@ pub struct Player {
 }
 
 pub struct GameOverEvent {
-    pub scores: u32,
+    pub score: u32,
 }
 
 pub struct PlayerPlugin;
@@ -113,7 +113,7 @@ pub fn track_player_dead(
     if let Ok((health, scores)) = players.get_single() {
         if health.is_dead() {
             game_over_events.send(GameOverEvent {
-                scores: scores.map(|scores| scores.amount).unwrap_or(0),
+                score: scores.map(|scores| scores.amount).unwrap_or(0),
             });
         }
     }
