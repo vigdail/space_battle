@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::{marker::PhantomData, time::Duration};
 
 use bevy::{
     asset::{AssetLoader, LoadedAsset},
@@ -17,7 +17,7 @@ use bevy_rapier2d::{
         RigidBodyVelocity,
     },
 };
-use serde::{Deserialize, Serialize};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
 use crate::{player::Player, Lifetime, Owner};
 
@@ -136,7 +136,7 @@ pub struct WeaponSlotDef {
     pub transform: Isometry2<f32>,
 }
 
-#[derive(Serialize, Deserialize, TypeUuid)]
+#[derive(Serialize, Deserialize, TypeUuid, Default)]
 #[uuid = "57f9ff4b-f4d1-4e51-9572-483113a861c9"]
 pub struct UnitDefs {
     pub name: String,
@@ -147,16 +147,21 @@ pub struct UnitDefs {
 }
 
 #[derive(Default)]
-pub struct UnitDefsLoader;
+pub struct RonLoader<T> {
+    _phantom: PhantomData<T>,
+}
 
-impl AssetLoader for UnitDefsLoader {
+impl<T> AssetLoader for RonLoader<T>
+where
+    T: Send + Sync + DeserializeOwned + TypeUuid + 'static,
+{
     fn load<'a>(
         &'a self,
         bytes: &'a [u8],
         load_context: &'a mut bevy::asset::LoadContext,
     ) -> bevy::asset::BoxedFuture<'a, Result<(), anyhow::Error>> {
         Box::pin(async move {
-            let custom_asset = ron::de::from_bytes::<UnitDefs>(bytes)?;
+            let custom_asset = ron::de::from_bytes::<T>(bytes)?;
             load_context.set_default_asset(LoadedAsset::new(custom_asset));
             Ok(())
         })
@@ -185,7 +190,7 @@ impl Plugin for CombatPlugin {
             .register_inspectable::<Loot>()
             .register_inspectable::<Health>();
         app.add_asset::<UnitDefs>()
-            .init_asset_loader::<UnitDefsLoader>()
+            .init_asset_loader::<RonLoader<UnitDefs>>()
             .add_event::<EquipWeaponEvent>()
             .add_event::<ShootEvent>()
             .add_event::<SpawnBulletEvent>()
