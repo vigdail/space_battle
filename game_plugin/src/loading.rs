@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bevy_asset_loader::{AssetCollection, AssetLoader};
 
-use crate::{combat::UnitDefs, states::GameState};
+use crate::states::GameState;
 
 pub struct LoadingPlugin;
 
@@ -10,7 +10,7 @@ impl Plugin for LoadingPlugin {
         AssetLoader::new(GameState::Loading)
             .continue_to_state(GameState::MainMenu)
             .with_collection::<FontAssets>()
-            .with_collection::<UnitAssets>()
+            .with_collection::<AssetsFolder>()
             .build(app);
         app.add_system_set(SystemSet::on_enter(GameState::Loading).with_system(
             |asset_server: ResMut<AssetServer>| {
@@ -30,9 +30,7 @@ pub struct FontAssets {
 }
 
 #[derive(AssetCollection)]
-pub struct UnitAssets {
-    #[asset(path = "units/dragon.ron")]
-    pub dragon: Handle<UnitDefs>,
-    #[asset(path = "units/predator.ron")]
-    pub predator: Handle<UnitDefs>,
+pub struct AssetsFolder {
+    #[asset(path = "units", folder)]
+    pub units: Vec<HandleUntyped>,
 }

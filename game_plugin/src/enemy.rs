@@ -13,7 +13,7 @@ use rand::{prelude::random, seq::SliceRandom};
 use crate::{
     combat::{Cooldown, Health, ShootEvent, UnitDefs, WeaponSlot, WeaponSlots},
     despawn_with,
-    loading::UnitAssets,
+    loading::AssetsFolder,
     player::Player,
     states::GameState,
 };
@@ -132,15 +132,15 @@ fn count_enemies(mut events: EventWriter<SpawnEnemyEvent>, enemies: Query<&Enemy
 fn spawn_enemy(
     mut commands: Commands,
     rapier_config: Res<RapierConfiguration>,
-    unit_handles: Res<UnitAssets>,
+    unit_handles: Res<AssetsFolder>,
     units: Res<Assets<UnitDefs>>,
     mut events: EventReader<SpawnEnemyEvent>,
 ) {
     let mut spawn = || {
         let mut rng = rand::thread_rng();
-        let handles = [&unit_handles.dragon, &unit_handles.predator];
-        let unit_handle = handles.choose(&mut rng).unwrap();
-        let unit = units.get(*unit_handle).unwrap();
+        let unit_handle = unit_handles.units.choose(&mut rng).unwrap();
+        let unit = units.get(unit_handle).unwrap();
+
         let position = Vec2::new(random::<f32>() * 400.0 - 200.0, random::<f32>() * 200.0);
         let size = Vec2::splat(32.0);
         let collider_size = size / rapier_config.scale;
