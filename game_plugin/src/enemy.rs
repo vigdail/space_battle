@@ -11,7 +11,7 @@ use bevy_rapier2d::{
 use rand::prelude::random;
 
 use crate::{
-    combat::{Cooldown, Health, ShootEvent, UnitDefs, Weapon},
+    combat::{Cooldown, Health, ShootEvent, UnitDefs, WeaponSlot, WeaponSlots},
     despawn_with,
     loading::UnitAssets,
     player::Player,
@@ -163,11 +163,15 @@ fn spawn_enemy(
             ..Default::default()
         };
 
-        let mut weapon_slots = unit.weapon_slots.clone();
-        let weapons = weapon_slots
-            .weapons
-            .iter_mut()
-            .map(|mut slot| {
+        // let mut weapon_slots = unit
+        //     .weapon_slots
+        //     .iter()
+        //     .map(|def| WeaponSlot::from_def(def, None))
+        //     .collect::<Vec<_>>();
+        let (weapons, slots): (Vec<_>, Vec<_>) = unit
+            .weapon_slots
+            .iter()
+            .map(|slot_def| {
                 let weapon_entity = commands
                     .spawn()
                     .insert_bundle(SpriteBundle {
@@ -178,17 +182,20 @@ fn spawn_enemy(
                         },
                         ..Default::default()
                     })
-                    .insert(Weapon::Laser {
-                        damage: 1,
-                        cooldown: Cooldown::from_seconds(1.0),
-                    })
+                    .insert(slot_def.weapon.clone())
+                    .insert(Cooldown::from_seconds(slot_def.weapon.cooldown()))
                     .insert(Name::new("Laser"))
-                    .insert(Transform::from_xyz(slot.position.x, slot.position.y, 0.0))
+                    .insert(Transform::from_xyz(
+                        slot_def.transform.translation.x,
+                        slot_def.transform.translation.y,
+                        0.0,
+                    ))
                     .id();
-                slot.weapon = Some(weapon_entity);
-                weapon_entity
+
+                let weapon_slot = WeaponSlot::from_def(slot_def, Some(weapon_entity));
+                (weapon_entity, weapon_slot)
             })
-            .collect::<Vec<_>>();
+            .unzip();
 
         let movement = if random::<bool>() {
             Movement::Horizontal {
@@ -220,7 +227,7 @@ fn spawn_enemy(
             .insert(movement)
             .insert(Health::new(unit.health))
             .insert(Name::new(unit.name.clone()))
-            .insert(weapon_slots)
+            .insert(WeaponSlots { weapons: slots })
             .insert(unit.loot.clone())
             .insert_children(0, &weapons);
     };

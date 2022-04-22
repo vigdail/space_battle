@@ -8,7 +8,7 @@ use bevy::{
 #[cfg(feature = "debug")]
 use bevy_inspector_egui::{Inspectable, RegisterInspectable};
 use bevy_rapier2d::{
-    na::Rotation2,
+    na::Isometry2,
     physics::{
         ColliderBundle, IntoEntity, RapierConfiguration, RigidBodyBundle, RigidBodyPositionSync,
     },
@@ -39,7 +39,7 @@ pub struct Loot {
 }
 
 #[cfg_attr(feature = "debug", derive(Inspectable))]
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Component)]
 pub struct Cooldown(#[cfg_attr(feature = "debug", inspectable(ignore))] pub Timer);
 
 impl Cooldown {
@@ -49,9 +49,9 @@ impl Cooldown {
 }
 
 #[cfg_attr(feature = "debug", derive(Inspectable))]
-#[derive(Component, Debug)]
+#[derive(Component, Debug, Serialize, Deserialize, Clone)]
 pub enum Weapon {
-    Laser { damage: u32, cooldown: Cooldown },
+    Laser { damage: u32, cooldown: f32 },
 }
 
 impl Weapon {
@@ -61,15 +61,9 @@ impl Weapon {
         }
     }
 
-    pub fn cooldown(&self) -> &Cooldown {
+    pub fn cooldown(&self) -> f32 {
         match self {
-            Weapon::Laser { cooldown, .. } => cooldown,
-        }
-    }
-
-    pub fn cooldown_mut(&mut self) -> &mut Cooldown {
-        match self {
-            Weapon::Laser { cooldown, .. } => cooldown,
+            Weapon::Laser { cooldown, .. } => *cooldown,
         }
     }
 }
@@ -78,12 +72,21 @@ impl Weapon {
 #[derive(Default, Clone, Serialize, Deserialize)]
 pub struct WeaponSlot {
     pub weapon: Option<Entity>,
-    pub position: Vec2,
-    pub angle: f32,
+    #[cfg_attr(feature = "debug", inspectable(ignore))]
+    pub transform: Isometry2<f32>,
+}
+
+impl WeaponSlot {
+    pub fn from_def(def: &WeaponSlotDef, weapon: Option<Entity>) -> Self {
+        Self {
+            weapon,
+            transform: def.transform,
+        }
+    }
 }
 
 #[cfg_attr(feature = "debug", derive(Inspectable))]
-#[derive(Component, Serialize, Deserialize, Clone)]
+#[derive(Component, Serialize, Deserialize)]
 pub struct WeaponSlots {
     pub weapons: Vec<WeaponSlot>,
 }
@@ -127,12 +130,18 @@ impl Health {
     }
 }
 
+#[derive(Serialize, Deserialize)]
+pub struct WeaponSlotDef {
+    pub weapon: Weapon,
+    pub transform: Isometry2<f32>,
+}
+
 #[derive(Serialize, Deserialize, TypeUuid)]
 #[uuid = "57f9ff4b-f4d1-4e51-9572-483113a861c9"]
 pub struct UnitDefs {
     pub name: String,
     pub health: u32,
-    pub weapon_slots: WeaponSlots,
+    pub weapon_slots: Vec<WeaponSlotDef>,
     pub loot: Loot,
 }
 
@@ -259,9 +268,9 @@ pub fn despawn_dead(
     }
 }
 
-pub fn update_cooldowns(time: Res<Time>, mut weapons: Query<&mut Weapon>) {
-    for mut weapon in weapons.iter_mut() {
-        weapon.cooldown_mut().0.tick(time.delta());
+pub fn update_cooldowns(time: Res<Time>, mut cooldowns: Query<&mut Cooldown>) {
+    for mut cooldown in cooldowns.iter_mut() {
+        cooldown.0.tick(time.delta());
     }
 }
 
@@ -289,8 +298,9 @@ pub fn test_equip_weapon(
                     })
                     .insert(Weapon::Laser {
                         damage: 1,
-                        cooldown: Cooldown::from_seconds(0.2),
+                        cooldown: 0.2,
                     })
+                    .insert(Cooldown::from_seconds(0.2)) // TODO
                     .insert(Name::new(format!("Weapon {}", slot_index)))
                     .id();
 
@@ -315,7 +325,11 @@ pub fn equip_weapon(
                 slot.weapon = Some(event.weapon_entity);
                 commands
                     .entity(event.weapon_entity)
-                    .insert(Transform::from_xyz(slot.position.x, slot.position.y, 0.0))
+                    .insert(Transform::from_xyz(
+                        slot.transform.translation.x,
+                        slot.transform.translation.y,
+                        0.0,
+                    ))
                     .insert(Visibility { is_visible: true });
                 commands.entity(event.entity).add_child(event.weapon_entity);
             }
@@ -327,7 +341,7 @@ fn handle_shoot_events(
     mut shoot_events: EventReader<ShootEvent>,
     mut spawn_bullet_events: EventWriter<SpawnBulletEvent>,
     weapon_slots: Query<&WeaponSlots>,
-    weapons: Query<&Weapon>,
+    weapons: Query<(&Weapon, &Cooldown)>,
 ) {
     for ShootEvent { shooter } in shoot_events.iter() {
         if let Ok(slots) = weapon_slots.get(*shooter) {
@@ -337,7 +351,7 @@ fn handle_shoot_events(
                         weapons
                             .get(weapon)
                             .ok()
-                            .filter(|weapon| weapon.cooldown().0.finished())
+                            .filter(|(_, cooldown)| cooldown.0.finished())
                     })
                     .is_some()
             }) {
@@ -354,23 +368,23 @@ fn spawn_bullets(
     mut commands: Commands,
     rapier_config: Res<RapierConfiguration>,
     mut events: EventReader<SpawnBulletEvent>,
-    mut weapons: Query<(&mut Weapon, &GlobalTransform)>,
+    mut weapons: Query<(&Weapon, &mut Cooldown, &GlobalTransform)>,
 ) {
     for SpawnBulletEvent {
         weapon_slot,
         shooter,
     } in events.iter()
     {
-        if let Some((mut weapon, global_transform)) = weapon_slot
+        if let Some((weapon, mut cooldown, global_transform)) = weapon_slot
             .weapon
             .and_then(|weapon_entity| weapons.get_mut(weapon_entity).ok())
         {
-            weapon.cooldown_mut().0.reset();
+            cooldown.0.reset();
             let damage = weapon.damage();
             let size = Vec2::new(16.0, 8.0);
             let collider_size = size / rapier_config.scale;
             let bullet_speed = 300.0;
-            let bullet_rotation = Rotation2::new(f32::from(weapon_slot.angle));
+            let bullet_rotation = weapon_slot.transform.rotation;
             let bullet_velocity = bullet_rotation.transform_vector(&[bullet_speed, 0.0].into());
 
             let rigidbody = RigidBodyBundle {
@@ -386,7 +400,7 @@ fn spawn_bullets(
                 .into(),
                 position: (
                     global_transform.translation.truncate(),
-                    f32::from(weapon_slot.angle),
+                    weapon_slot.transform.rotation.angle(),
                 )
                     .into(),
                 ..Default::default()

@@ -4,12 +4,13 @@ UnitDefs(
 	loot: (
 		score: 1,
 	),
-	weapon_slots: (
-		weapons: [
-			(
-				position: (0.0, 20.0),
-				angle: -1.57,
+	weapon_slots: [
+		(
+			weapon: Laser(damage: 1, cooldown: 1.0),
+			transform: (
+				translation: [0.0, 20.0], 
+				rotation: (0.0, -1.0),
 			),
-		]
-	)
+		),
+	]
 )

@@ -88,18 +88,18 @@ fn spawn_player(mut commands: Commands, rapier_config: Res<RapierConfiguration>)
             weapons: vec![
                 WeaponSlot {
                     weapon: None,
-                    position: Vec2::new(0.0, 20.0),
-                    angle: 90.0f32.to_radians(),
+                    // transform: ([0.0, 20.0], 90.0f32.to_radians()).into(),
+                    transform: (Vec2::new(0.0, 20.0), 90.0f32.to_radians()).into(),
                 },
                 WeaponSlot {
                     weapon: None,
-                    position: Vec2::new(-15.0, 20.0),
-                    angle: 90.0f32.to_radians(),
+                    transform: (Vec2::new(-15.0, 20.0), 90.0f32.to_radians()).into(),
                 },
                 WeaponSlot {
                     weapon: None,
-                    position: Vec2::new(15.0, 20.0),
-                    angle: 45.0f32.to_radians(),
+                    transform: (Vec2::new(15.0, 20.0), 45.0f32.to_radians()).into(),
+                    // position: Vec2::new(15.0, 20.0),
+                    // angle: 45.0f32.to_radians(),
                 },
             ],
         })
