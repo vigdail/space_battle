@@ -4,6 +4,7 @@ UnitDefs(
 	loot: (
 		score: 1,
 	),
+	color: (0.7, 0.3, 0.2),
 	weapon_slots: [
 		(
 			weapon: Laser(damage: 1, cooldown: 1.0),

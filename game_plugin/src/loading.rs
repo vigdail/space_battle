@@ -33,4 +33,6 @@ pub struct FontAssets {
 pub struct UnitAssets {
     #[asset(path = "units/dragon.ron")]
     pub dragon: Handle<UnitDefs>,
+    #[asset(path = "units/predator.ron")]
+    pub predator: Handle<UnitDefs>,
 }

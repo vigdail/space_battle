@@ -143,6 +143,7 @@ pub struct UnitDefs {
     pub health: u32,
     pub weapon_slots: Vec<WeaponSlotDef>,
     pub loot: Loot,
+    pub color: [f32; 3],
 }
 
 #[derive(Default)]

@@ -8,7 +8,7 @@ use bevy_rapier2d::{
         RigidBodyPositionComponent, RigidBodyType,
     },
 };
-use rand::prelude::random;
+use rand::{prelude::random, seq::SliceRandom};
 
 use crate::{
     combat::{Cooldown, Health, ShootEvent, UnitDefs, WeaponSlot, WeaponSlots},
@@ -137,7 +137,10 @@ fn spawn_enemy(
     mut events: EventReader<SpawnEnemyEvent>,
 ) {
     let mut spawn = || {
-        let unit = units.get(&unit_handles.dragon).unwrap();
+        let mut rng = rand::thread_rng();
+        let handles = [&unit_handles.dragon, &unit_handles.predator];
+        let unit_handle = handles.choose(&mut rng).unwrap();
+        let unit = units.get(*unit_handle).unwrap();
         let position = Vec2::new(random::<f32>() * 400.0 - 200.0, random::<f32>() * 200.0);
         let size = Vec2::splat(32.0);
         let collider_size = size / rapier_config.scale;
@@ -163,11 +166,6 @@ fn spawn_enemy(
             ..Default::default()
         };
 
-        // let mut weapon_slots = unit
-        //     .weapon_slots
-        //     .iter()
-        //     .map(|def| WeaponSlot::from_def(def, None))
-        //     .collect::<Vec<_>>();
         let (weapons, slots): (Vec<_>, Vec<_>) = unit
             .weapon_slots
             .iter()
@@ -214,7 +212,7 @@ fn spawn_enemy(
         commands
             .spawn_bundle(SpriteBundle {
                 sprite: Sprite {
-                    color: Color::OLIVE,
+                    color: unit.color.into(),
                     custom_size: Some(size),
                     ..Default::default()
                 },
