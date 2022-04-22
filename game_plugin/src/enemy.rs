@@ -11,7 +11,7 @@ use bevy_rapier2d::{
 use rand::{prelude::random, seq::SliceRandom};
 
 use crate::{
-    combat::{Cooldown, Health, ShootEvent, UnitDefs, WeaponSlot, WeaponSlots},
+    combat::{Cooldown, Health, ShootEvent, UnitRaw, WeaponSlot, WeaponSlots},
     despawn_with,
     loading::AssetsFolder,
     player::Player,
@@ -133,7 +133,7 @@ fn spawn_enemy(
     mut commands: Commands,
     rapier_config: Res<RapierConfiguration>,
     unit_handles: Res<AssetsFolder>,
-    units: Res<Assets<UnitDefs>>,
+    units: Res<Assets<UnitRaw>>,
     mut events: EventReader<SpawnEnemyEvent>,
 ) {
     let mut spawn = || {
@@ -190,7 +190,7 @@ fn spawn_enemy(
                     ))
                     .id();
 
-                let weapon_slot = WeaponSlot::from_def(slot_def, Some(weapon_entity));
+                let weapon_slot = WeaponSlot::from_raw(slot_def, Some(weapon_entity));
                 (weapon_entity, weapon_slot)
             })
             .unzip();
@@ -225,7 +225,7 @@ fn spawn_enemy(
             .insert(movement)
             .insert(Health::new(unit.health))
             .insert(Name::new(unit.name.clone()))
-            .insert(WeaponSlots { weapons: slots })
+            .insert(WeaponSlots { slots })
             .insert(unit.loot.clone())
             .insert_children(0, &weapons);
     };
