@@ -12,9 +12,14 @@ impl Plugin for LoadingPlugin {
             .with_collection::<FontAssets>()
             .with_collection::<UnitAssets>()
             .build(app);
-        app.add_system_set(SystemSet::on_enter(GameState::Loading).with_system(|| {
-            println!("Loading...");
-        }));
+        app.add_system_set(SystemSet::on_enter(GameState::Loading).with_system(
+            |asset_server: ResMut<AssetServer>| {
+                println!("Loading...");
+                asset_server
+                    .watch_for_changes()
+                    .unwrap_or_else(|err| info!("AssetServer unable to watch changes: {}", err));
+            },
+        ));
     }
 }
 
