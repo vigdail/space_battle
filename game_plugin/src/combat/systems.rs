@@ -1,32 +1,27 @@
 use bevy::prelude::*;
-use bevy_rapier2d::{
-    physics::{
-        ColliderBundle, IntoEntity, RapierConfiguration, RigidBodyBundle, RigidBodyPositionSync,
-    },
-    prelude::{
-        ActiveEvents, ColliderShape, ColliderType, IntersectionEvent, RigidBodyForces,
-        RigidBodyVelocity,
-    },
-};
+use heron::{prelude::*, SensorShape};
 
 use crate::{player::Player, Lifetime, Owner};
 
 use super::{
     components::{Bullet, Cooldown, Health, Loot, Scores, Weapon, WeaponSlots},
-    events::{Contact, RewardEvent, ShootEvent, SpawnBulletEvent},
+    events::{ContactEvent, RewardEvent, ShootEvent, SpawnBulletEvent},
     EquipWeaponEvent,
 };
 
 pub fn handle_intersections(
-    mut intersection_events: EventReader<IntersectionEvent>,
+    mut collision_events: EventReader<CollisionEvent>,
     bullets: Query<&Bullet>,
     healths: Query<&Health>,
     owners: Query<&Owner>,
-    mut contact_events: EventWriter<Contact>,
+    mut contact_events: EventWriter<ContactEvent>,
 ) {
-    for event in intersection_events.iter().filter(|e| e.intersecting) {
-        let entity1 = event.collider1.entity();
-        let entity2 = event.collider2.entity();
+    for (data1, data2) in collision_events.iter().filter_map(|e| match e {
+        CollisionEvent::Started(data1, data2) => Some((data1, data2)),
+        _ => None,
+    }) {
+        let entity1 = data1.rigid_body_entity();
+        let entity2 = data2.rigid_body_entity();
 
         let mut check_bullet = |health_entity, bullet_entity| {
             if healths.get(health_entity).is_ok() && bullets.get(bullet_entity).is_ok() {
@@ -36,7 +31,7 @@ pub fn handle_intersections(
                     .unwrap_or(false);
 
                 if !is_owner {
-                    contact_events.send(Contact::HealthBullet(health_entity, bullet_entity));
+                    contact_events.send(ContactEvent::HealthBullet(health_entity, bullet_entity));
                 }
             }
         };
@@ -48,13 +43,13 @@ pub fn handle_intersections(
 
 pub fn handle_contacts(
     mut commands: Commands,
-    mut contact_events: EventReader<Contact>,
+    mut contact_events: EventReader<ContactEvent>,
     mut healths: Query<&mut Health>,
     bullets: Query<&Bullet>,
 ) {
     for event in contact_events.iter() {
         match *event {
-            Contact::HealthBullet(health_entity, bullet_entity) => {
+            ContactEvent::HealthBullet(health_entity, bullet_entity) => {
                 if let Some((mut health, bullet)) = healths
                     .get_mut(health_entity)
                     .ok()
@@ -182,7 +177,6 @@ pub fn handle_shoot_events(
 
 pub fn spawn_bullets(
     mut commands: Commands,
-    rapier_config: Res<RapierConfiguration>,
     mut events: EventReader<SpawnBulletEvent>,
     mut weapons: Query<(&Weapon, &mut Cooldown, &GlobalTransform)>,
 ) {
@@ -198,36 +192,35 @@ pub fn spawn_bullets(
             cooldown.0.reset();
             let damage = weapon.damage();
             let size = Vec2::new(16.0, 8.0);
-            let collider_size = size / rapier_config.scale;
             let bullet_speed = 300.0;
             let bullet_rotation = weapon_slot.transform.rotation;
-            let bullet_velocity = bullet_rotation.transform_vector(&[bullet_speed, 0.0].into());
+            let bullet_velocity = bullet_rotation.mul_vec3(Vec3::X * bullet_speed);
 
-            let rigidbody = RigidBodyBundle {
-                velocity: RigidBodyVelocity {
-                    linvel: bullet_velocity,
-                    ..Default::default()
-                }
-                .into(),
-                forces: RigidBodyForces {
-                    gravity_scale: 0.0,
-                    ..Default::default()
-                }
-                .into(),
-                position: (
-                    global_transform.translation.truncate(),
-                    weapon_slot.transform.rotation.angle(),
-                )
-                    .into(),
-                ..Default::default()
-            };
+            // let rigidbody = RigidBodyBundle {
+            //     velocity: RigidBodyVelocity {
+            //         linvel: bullet_velocity,
+            //         ..Default::default()
+            //     }
+            //     .into(),
+            //     forces: RigidBodyForces {
+            //         gravity_scale: 0.0,
+            //         ..Default::default()
+            //     }
+            //     .into(),
+            //     position: (
+            //         global_transform.translation.truncate(),
+            //         weapon_slot.transform.rotation.angle(),
+            //     )
+            //         .into(),
+            //     ..Default::default()
+            // };
 
-            let collider = ColliderBundle {
-                collider_type: ColliderType::Sensor.into(),
-                shape: ColliderShape::cuboid(collider_size.x / 2.0, collider_size.y / 2.0).into(),
-                flags: (ActiveEvents::INTERSECTION_EVENTS).into(),
-                ..Default::default()
-            };
+            // let collider = ColliderBundle {
+            //     collider_type: ColliderType::Sensor.into(),
+            //     shape: ColliderShape::cuboid(collider_size.x / 2.0, collider_size.y / 2.0).into(),
+            //     flags: (ActiveEvents::INTERSECTION_EVENTS).into(),
+            //     ..Default::default()
+            // };
             commands
                 .spawn_bundle(SpriteBundle {
                     sprite: Sprite {
@@ -235,15 +228,21 @@ pub fn spawn_bullets(
                         custom_size: Some(size),
                         ..Default::default()
                     },
+                    transform: Transform::from_translation(global_transform.translation)
+                        .with_rotation(bullet_rotation),
                     ..Default::default()
                 })
                 .insert(Bullet { damage })
                 .insert(Lifetime {
                     timer: Timer::from_seconds(1.0, false),
                 })
-                .insert_bundle(rigidbody)
-                .insert_bundle(collider)
-                .insert(RigidBodyPositionSync::Discrete)
+                .insert(RigidBody::KinematicVelocityBased)
+                .insert(SensorShape)
+                .insert(CollisionShape::Cuboid {
+                    half_extends: size.extend(0.0) / 2.0,
+                    border_radius: None,
+                })
+                .insert(Velocity::from_linear(bullet_velocity))
                 .insert(Owner { entity: *shooter });
         }
     }

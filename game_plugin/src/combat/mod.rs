@@ -65,7 +65,7 @@ impl Plugin for CombatPlugin {
             .add_event::<ShootEvent>()
             .add_event::<SpawnBulletEvent>()
             .add_event::<RewardEvent>()
-            .add_event::<Contact>()
+            .add_event::<ContactEvent>()
             .add_system(equip_weapon)
             .add_system(handle_intersections)
             .add_system(handle_contacts)

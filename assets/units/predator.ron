@@ -1,4 +1,4 @@
-UnitDefs(
+Unit(
 	name: "Predator",
 	health: 2,
 	loot: (
@@ -8,17 +8,13 @@ UnitDefs(
 	weapon_slots: [
 		(
 			weapon: Laser(damage: 3, cooldown: 1.0),
-			transform: (
-				translation: [0.0, 20.0], 
-				rotation: (0.5, -1.0),
-			),
+			position: (0.0, 20.0), 
+			rotation: 135.0,
 		),
 		(
 			weapon: Laser(damage: 3, cooldown: 1.0),
-			transform: (
-				translation: [0.0, 20.0], 
-				rotation: (-0.5, -1.0),
-			),
+			position: (0.0, 20.0), 
+			rotation: 45.0,
 		),
 	]
 )

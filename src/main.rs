@@ -2,10 +2,8 @@ use bevy::prelude::*;
 
 #[cfg(feature = "debug")]
 use bevy_inspector_egui::WorldInspectorPlugin;
-use bevy_rapier2d::physics::{NoUserData, RapierConfiguration, RapierPhysicsPlugin};
-#[cfg(feature = "debug")]
-use bevy_rapier2d::render::RapierRenderPlugin;
 use game_plugin::GamePlugin;
+use heron::prelude::*;
 
 fn main() {
     let mut app = App::new();
@@ -16,15 +14,10 @@ fn main() {
         ..Default::default()
     })
     .insert_resource(ClearColor(Color::BLACK))
-    .insert_resource(RapierConfiguration {
-        scale: 32.0,
-        ..Default::default()
-    })
     .add_plugins(DefaultPlugins);
     #[cfg(feature = "debug")]
-    app.add_plugin(WorldInspectorPlugin::default())
-        .add_plugin(RapierRenderPlugin);
-    app.add_plugin(RapierPhysicsPlugin::<NoUserData>::default())
+    app.add_plugin(WorldInspectorPlugin::default());
+    app.add_plugin(PhysicsPlugin::default())
         .add_plugin(GamePlugin)
         .run();
 }

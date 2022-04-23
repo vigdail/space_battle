@@ -1,13 +1,7 @@
 use bevy::prelude::*;
 #[cfg(feature = "debug")]
 use bevy_inspector_egui::{Inspectable, RegisterInspectable};
-use bevy_rapier2d::{
-    physics::{ColliderBundle, RapierConfiguration, RigidBodyBundle, RigidBodyPositionSync},
-    prelude::{
-        ActiveEvents, ColliderMaterial, ColliderShape, RigidBodyMassProps, RigidBodyMassPropsFlags,
-        RigidBodyPositionComponent, RigidBodyType,
-    },
-};
+use heron::prelude::*;
 use rand::{prelude::random, seq::SliceRandom};
 
 use crate::{
@@ -131,7 +125,6 @@ fn count_enemies(mut events: EventWriter<SpawnEnemyEvent>, enemies: Query<&Enemy
 
 fn spawn_enemy(
     mut commands: Commands,
-    rapier_config: Res<RapierConfiguration>,
     unit_handles: Res<AssetsFolder>,
     units: Res<Assets<UnitRaw>>,
     mut events: EventReader<SpawnEnemyEvent>,
@@ -141,30 +134,12 @@ fn spawn_enemy(
         let unit_handle = unit_handles.units.choose(&mut rng).unwrap();
         let unit = units.get(unit_handle).unwrap();
 
-        let position = Vec2::new(random::<f32>() * 400.0 - 200.0, random::<f32>() * 200.0);
+        let position = Vec3::new(
+            random::<f32>() * 400.0 - 200.0,
+            random::<f32>() * 200.0,
+            0.0,
+        );
         let size = Vec2::splat(32.0);
-        let collider_size = size / rapier_config.scale;
-        let collider = ColliderBundle {
-            shape: ColliderShape::cuboid(collider_size.x / 2.0, collider_size.y / 2.0).into(),
-            material: ColliderMaterial {
-                friction: 0.0,
-                ..Default::default()
-            }
-            .into(),
-            flags: (ActiveEvents::INTERSECTION_EVENTS).into(),
-            ..Default::default()
-        };
-
-        let rigidbody = RigidBodyBundle {
-            body_type: RigidBodyType::KinematicPositionBased.into(),
-            position: (position, 180.0f32.to_radians()).into(),
-            mass_properties: RigidBodyMassProps {
-                flags: RigidBodyMassPropsFlags::ROTATION_LOCKED,
-                ..Default::default()
-            }
-            .into(),
-            ..Default::default()
-        };
 
         let (weapons, slots): (Vec<_>, Vec<_>) = unit
             .weapon_slots
@@ -184,8 +159,8 @@ fn spawn_enemy(
                     .insert(Cooldown::from_seconds(slot_def.weapon.cooldown()))
                     .insert(Name::new("Laser"))
                     .insert(Transform::from_xyz(
-                        slot_def.transform.translation.x,
-                        slot_def.transform.translation.y,
+                        slot_def.position.x,
+                        slot_def.position.y,
                         0.0,
                     ))
                     .id();
@@ -216,11 +191,16 @@ fn spawn_enemy(
                     custom_size: Some(size),
                     ..Default::default()
                 },
+                transform: Transform::from_translation(position)
+                    .with_rotation(Quat::from_rotation_z(180.0f32.to_radians())),
                 ..Default::default()
             })
-            .insert_bundle(collider)
-            .insert_bundle(rigidbody)
-            .insert(RigidBodyPositionSync::Discrete)
+            .insert(RigidBody::KinematicPositionBased)
+            .insert(CollisionShape::Cuboid {
+                half_extends: size.extend(0.0) / 2.0,
+                border_radius: None,
+            })
+            .insert(RotationConstraints::lock())
             .insert(Enemy)
             .insert(movement)
             .insert(Health::new(unit.health))
@@ -258,10 +238,11 @@ fn test_chase(
 
 fn movement(
     time: Res<Time>,
-    mut enemies: Query<(&mut Movement, &Transform, &mut RigidBodyPositionComponent)>,
-    transforms: Query<&Transform>,
+    mut enemies: Query<(&mut Movement, &mut Transform)>,
+    // TODO: use query set, because the target may have Movement component
+    transforms: Query<&Transform, Without<Movement>>,
 ) {
-    for (mut movement, transform, mut position) in enemies.iter_mut() {
+    for (mut movement, mut transform) in enemies.iter_mut() {
         match *movement {
             Movement::Horizontal {
                 min,
@@ -273,27 +254,17 @@ fn movement(
                 } else if transform.translation.x >= max {
                     *current_dir = Dir::Left;
                 }
-                position.next_position.translation = [
-                    position.position.translation.x
-                        + current_dir.as_f32() * 100.0 * time.delta_seconds(),
-                    position.position.translation.y,
-                ]
-                .into();
+                transform.translation +=
+                    current_dir.as_f32() * 100.0 * time.delta_seconds() * Vec3::X;
             }
             Movement::Chase { target } => {
                 if let Some(target_transform) =
                     target.and_then(|target| transforms.get(target).ok())
                 {
                     let target_position = target_transform.translation;
-                    let dir = Vec2::new(
-                        target_position.x - position.position.translation.x,
-                        target_position.y - position.position.translation.y,
-                    )
-                    .normalize();
+                    let dir = (target_position - transform.translation).normalize_or_zero();
                     let speed = 40.0;
-                    let x = position.position.translation.x + dir.x * time.delta_seconds() * speed;
-                    let y = position.position.translation.y + dir.y * time.delta_seconds() * speed;
-                    position.next_position = [x, y].into();
+                    transform.translation += speed * dir * time.delta_seconds();
                 }
             }
             Movement::Circle {
@@ -310,7 +281,7 @@ fn movement(
                     RotationDir::CounterClockwise => -1.0,
                 };
                 *current_angle += dir * time.delta_seconds() * angular_speed;
-                position.next_position.translation = [x, y].into();
+                transform.translation = Vec3::new(x, y, 0.0);
             }
             Movement::Static => {}
         }

@@ -16,6 +16,6 @@ pub struct SpawnBulletEvent {
     pub shooter: Entity,
 }
 
-pub enum Contact {
+pub enum ContactEvent {
     HealthBullet(Entity, Entity),
 }

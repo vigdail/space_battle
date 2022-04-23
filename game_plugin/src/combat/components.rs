@@ -1,5 +1,4 @@
 use bevy::{prelude::*, reflect::TypeUuid};
-use bevy_rapier2d::na::Isometry2;
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
 
@@ -54,24 +53,24 @@ impl Weapon {
 }
 
 #[cfg_attr(feature = "debug", derive(Inspectable))]
-#[derive(Default, Clone, Serialize, Deserialize)]
+#[derive(Default, Clone)]
 pub struct WeaponSlot {
     pub weapon: Option<Entity>,
-    #[cfg_attr(feature = "debug", inspectable(ignore))]
-    pub transform: Isometry2<f32>,
+    pub transform: Transform,
 }
 
 impl WeaponSlot {
     pub fn from_raw(def: &WeaponSlotRaw, weapon: Option<Entity>) -> Self {
         Self {
             weapon,
-            transform: def.transform,
+            transform: Transform::from_translation(def.position.extend(0.0))
+                .with_rotation(Quat::from_rotation_z(def.rotation.to_radians())),
         }
     }
 }
 
 #[cfg_attr(feature = "debug", derive(Inspectable))]
-#[derive(Component, Serialize, Deserialize)]
+#[derive(Component)]
 pub struct WeaponSlots {
     pub slots: Vec<WeaponSlot>,
 }
@@ -106,7 +105,8 @@ impl Health {
 #[serde(rename = "WeaponSlot")]
 pub struct WeaponSlotRaw {
     pub weapon: Weapon,
-    pub transform: Isometry2<f32>,
+    pub position: Vec2,
+    pub rotation: f32,
 }
 
 #[derive(Serialize, Deserialize, TypeUuid, Default)]
