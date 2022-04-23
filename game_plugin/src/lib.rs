@@ -11,11 +11,7 @@ mod states;
 use bevy::prelude::*;
 #[cfg(feature = "debug")]
 use bevy_inspector_egui::{Inspectable, RegisterInspectable};
-use bevy_rapier2d::{
-    physics::{ColliderBundle, ColliderPositionSync, RapierConfiguration, RigidBodyBundle},
-    prelude::{ColliderMaterial, ColliderShape, RigidBodyType},
-    render::ColliderDebugRender,
-};
+use heron::prelude::*;
 
 use combat::CombatPlugin;
 use countdown::CountdownPlugin;
@@ -69,11 +65,7 @@ pub fn despawn_with<T: Component>(mut commands: Commands, query: Query<Entity, W
     }
 }
 
-fn spawn_bounds(
-    mut commands: Commands,
-    window: Res<WindowDescriptor>,
-    rapier_config: Res<RapierConfiguration>,
-) {
+fn spawn_bounds(mut commands: Commands, window: Res<WindowDescriptor>) {
     let thickness = 32.0;
     let sizes = vec![
         Vec2::new(thickness, window.height - 2.0 * thickness),
@@ -88,24 +80,20 @@ fn spawn_bounds(
         Vec2::new(0.0, (window.height - thickness) / 2.0),
     ];
     for (size, position) in sizes.into_iter().zip(positions.iter()) {
-        let collider_size = size / rapier_config.scale;
         commands
-            .spawn_bundle(RigidBodyBundle {
-                body_type: RigidBodyType::Static.into(),
-                position: [position.x, position.y].into(),
+            .spawn_bundle(TransformBundle {
+                local: Transform::from_translation(position.extend(0.0)),
                 ..Default::default()
             })
-            .insert_bundle(ColliderBundle {
-                shape: ColliderShape::cuboid(collider_size.x / 2.0, collider_size.y / 2.0).into(),
-                material: ColliderMaterial {
-                    friction: 0.0,
-                    ..Default::default()
-                }
-                .into(),
+            .insert(RigidBody::Static)
+            .insert(CollisionShape::Cuboid {
+                half_extends: size.extend(0.0) / 2.0,
+                border_radius: None,
+            })
+            .insert(PhysicMaterial {
+                friction: 0.0,
                 ..Default::default()
             })
-            .insert(ColliderPositionSync::Discrete)
-            .insert(ColliderDebugRender::with_id(1))
             .insert(Name::new("Wall"));
     }
 }

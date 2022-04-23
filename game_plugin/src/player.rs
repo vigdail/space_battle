@@ -3,14 +3,7 @@
 use bevy::prelude::*;
 #[cfg(feature = "debug")]
 use bevy_inspector_egui::{Inspectable, RegisterInspectable};
-use bevy_rapier2d::{
-    na::Vector2,
-    physics::{ColliderBundle, ColliderPositionSync, RapierConfiguration, RigidBodyBundle},
-    prelude::{
-        ColliderMaterial, ColliderShape, RigidBodyForces, RigidBodyMassProps,
-        RigidBodyMassPropsFlags, RigidBodyVelocityComponent,
-    },
-};
+use heron::prelude::*;
 
 use crate::{
     combat::{Health, Scores, ShootEvent, WeaponSlot, WeaponSlots},
@@ -45,9 +38,8 @@ impl Plugin for PlayerPlugin {
     }
 }
 
-fn spawn_player(mut commands: Commands, rapier_config: Res<RapierConfiguration>) {
+fn spawn_player(mut commands: Commands) {
     let player_size = Vec2::splat(32.0);
-    let collider_size = player_size / rapier_config.scale;
     commands
         .spawn_bundle(SpriteBundle {
             sprite: Sprite {
@@ -55,32 +47,20 @@ fn spawn_player(mut commands: Commands, rapier_config: Res<RapierConfiguration>)
                 custom_size: Some(player_size),
                 ..Default::default()
             },
+            transform: Transform::from_xyz(0.0, -150.0, 0.0),
             ..Default::default()
         })
-        .insert_bundle(ColliderBundle {
-            shape: ColliderShape::cuboid(collider_size.x / 2.0, collider_size.y / 2.0).into(),
-            material: ColliderMaterial {
-                friction: 0.0,
-                ..Default::default()
-            }
-            .into(),
+        .insert(RigidBody::Dynamic)
+        .insert(CollisionShape::Cuboid {
+            half_extends: player_size.extend(0.0) / 2.0,
+            border_radius: None,
+        })
+        .insert(Velocity::default())
+        .insert(RotationConstraints::lock())
+        .insert(PhysicMaterial {
+            friction: 0.0,
             ..Default::default()
         })
-        .insert_bundle(RigidBodyBundle {
-            mass_properties: RigidBodyMassProps {
-                flags: RigidBodyMassPropsFlags::ROTATION_LOCKED,
-                ..Default::default()
-            }
-            .into(),
-            position: [0.0, -150.0].into(),
-            forces: RigidBodyForces {
-                gravity_scale: 0.0,
-                ..Default::default()
-            }
-            .into(),
-            ..Default::default()
-        })
-        .insert(ColliderPositionSync::Discrete)
         .insert(Player { speed: 200.0 })
         .insert(Health::new(1))
         .insert(Name::new("Player"))
@@ -88,15 +68,18 @@ fn spawn_player(mut commands: Commands, rapier_config: Res<RapierConfiguration>)
             slots: vec![
                 WeaponSlot {
                     weapon: None,
-                    transform: (Vec2::new(0.0, 20.0), 90.0f32.to_radians()).into(),
+                    transform: Transform::from_translation(Vec3::new(0.0, 20.0, 0.0))
+                        .with_rotation(Quat::from_rotation_z(90.0f32.to_radians())),
                 },
                 WeaponSlot {
                     weapon: None,
-                    transform: (Vec2::new(-15.0, 20.0), 90.0f32.to_radians()).into(),
+                    transform: Transform::from_translation(Vec3::new(-15.0, 20.0, 0.0))
+                        .with_rotation(Quat::from_rotation_z(90.0f32.to_radians())),
                 },
                 WeaponSlot {
                     weapon: None,
-                    transform: (Vec2::new(15.0, 20.0), 45.0f32.to_radians()).into(),
+                    transform: Transform::from_translation(Vec3::new(15.0, 20.0, 0.0))
+                        .with_rotation(Quat::from_rotation_z(90.0f32.to_radians())),
                 },
             ],
         })
@@ -129,10 +112,9 @@ pub fn handle_game_over(
 
 pub fn player_movement(
     keyboard_input: Res<Input<KeyCode>>,
-    rapier_parameters: Res<RapierConfiguration>,
-    mut players: Query<(&Player, &mut RigidBodyVelocityComponent)>,
+    mut players: Query<(&Player, &mut Velocity)>,
 ) {
-    for (player, mut vels) in players.iter_mut() {
+    for (player, mut velocity) in players.iter_mut() {
         let up = keyboard_input.pressed(KeyCode::W) || keyboard_input.pressed(KeyCode::Up);
         let down = keyboard_input.pressed(KeyCode::S) || keyboard_input.pressed(KeyCode::Down);
         let left = keyboard_input.pressed(KeyCode::A) || keyboard_input.pressed(KeyCode::Left);
@@ -141,12 +123,9 @@ pub fn player_movement(
         let x_axis = -(left as i8) + right as i8;
         let y_axis = -(down as i8) + up as i8;
 
-        let mut move_delta: Vector2<_> = [x_axis as f32, y_axis as f32].into();
-        if move_delta != Vector2::zeros() {
-            move_delta /= move_delta.magnitude() * rapier_parameters.scale;
-        }
+        let move_delta = Vec3::new(x_axis as f32, y_axis as f32, 0.0).normalize_or_zero();
 
-        vels.linvel = move_delta * player.speed;
+        velocity.linear = move_delta * player.speed;
     }
 }
 
