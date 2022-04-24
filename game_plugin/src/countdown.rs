@@ -8,6 +8,8 @@ use crate::{
     states::GameState,
 };
 
+const COUNTDOWN_TIME: f32 = 1.0;
+
 #[derive(Component)]
 struct CountdownUITag;
 
@@ -40,7 +42,7 @@ impl Plugin for CountdownPlugin {
 }
 
 fn setup_countdown(mut commands: Commands) {
-    commands.insert_resource(CountdownTimer::from_seconds(3.0));
+    commands.insert_resource(CountdownTimer::from_seconds(COUNTDOWN_TIME));
 }
 
 fn spawn_ui(mut commands: Commands, fonts: Res<FontAssets>) {

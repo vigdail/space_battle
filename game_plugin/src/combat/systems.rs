@@ -156,22 +156,19 @@ pub fn handle_shoot_events(
 pub fn spawn_bullets(
     mut commands: Commands,
     mut events: EventReader<SpawnBulletEvent>,
-    mut weapons: Query<(&Weapon, &mut Cooldown, &Transform, &GlobalTransform)>,
+    mut weapons: Query<(&Weapon, &mut Cooldown, &GlobalTransform)>,
 ) {
     for SpawnBulletEvent {
         weapon: weapon_entity,
         shooter,
     } in events.iter()
     {
-        if let Ok((weapon, mut cooldown, transform, global_transform)) =
-            weapons.get_mut(*weapon_entity)
-        {
+        if let Ok((weapon, mut cooldown, transform)) = weapons.get_mut(*weapon_entity) {
             cooldown.0.reset();
             let damage = weapon.damage();
             let size = Vec2::new(16.0, 8.0);
             let bullet_speed = 300.0;
-            let bullet_rotation = transform.rotation;
-            let bullet_velocity = bullet_rotation.mul_vec3(Vec3::X * bullet_speed);
+            let bullet_velocity = transform.rotation.mul_vec3(Vec3::X * bullet_speed);
 
             commands
                 .spawn_bundle(SpriteBundle {
@@ -180,8 +177,7 @@ pub fn spawn_bullets(
                         custom_size: Some(size),
                         ..default()
                     },
-                    transform: Transform::from_translation(global_transform.translation)
-                        .with_rotation(bullet_rotation),
+                    transform: transform.clone().into(),
                     ..default()
                 })
                 .insert(Bullet { damage })
