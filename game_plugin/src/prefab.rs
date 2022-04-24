@@ -45,29 +45,8 @@ where
     }
 }
 
-pub struct ApplyPrefabHandle<T: Prefab + Asset> {
-    entity: Entity,
-    handle: Handle<T>,
-}
-
-impl<T> Command for ApplyPrefabHandle<T>
-where
-    T: Prefab + Asset + Clone,
-{
-    fn write(self, world: &mut World) {
-        let prefab = world
-            .get_resource::<Assets<T>>()
-            .and_then(|assets| assets.get(self.handle))
-            .cloned()
-            .unwrap(); // TODO: Retry to apply prefab in some system
-
-        prefab.apply(self.entity, world);
-    }
-}
-
 pub trait EntityPrefabCommands {
     fn apply_prefab<T: Prefab>(&mut self, prefab: T) -> &mut Self;
-    fn apply_prefab_handle<T: Prefab + Asset + Clone>(&mut self, handle: Handle<T>) -> &mut Self;
 }
 
 impl EntityPrefabCommands for EntityCommands<'_, '_, '_> {
@@ -76,10 +55,36 @@ impl EntityPrefabCommands for EntityCommands<'_, '_, '_> {
         self.commands().add(ApplyPrefab { entity, prefab });
         self
     }
+}
 
-    fn apply_prefab_handle<T: Prefab + Asset + Clone>(&mut self, handle: Handle<T>) -> &mut Self {
-        let entity = self.id();
-        self.commands().add(ApplyPrefabHandle { entity, handle });
-        self
+pub trait RegisterPrefab {
+    fn register_prefab<T>(&mut self) -> &mut Self
+    where
+        T: Prefab + Asset + Clone;
+}
+
+impl RegisterPrefab for App {
+    fn register_prefab<T>(&mut self) -> &mut Self
+    where
+        T: Prefab + Asset + Clone,
+    {
+        self.add_system(apply_prefab_handle::<T>)
+    }
+}
+
+fn apply_prefab_handle<T>(
+    mut commands: Commands,
+    assets: Res<Assets<T>>,
+    query: Query<(Entity, &Handle<T>)>,
+) where
+    T: Prefab + Asset + Clone,
+{
+    for (entity, handle) in query.iter() {
+        if let Some(prefab) = assets.get(handle) {
+            commands
+                .entity(entity)
+                .apply_prefab(prefab.clone())
+                .remove::<Handle<T>>();
+        }
     }
 }

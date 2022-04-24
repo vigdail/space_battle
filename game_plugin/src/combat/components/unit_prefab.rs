@@ -1,4 +1,4 @@
-use bevy::{prelude::*, reflect::TypeUuid};
+use bevy::{prelude::*, reflect::TypeUuid, render::texture::DEFAULT_IMAGE_HANDLE};
 use heron::CollisionShape;
 use serde::{Deserialize, Serialize};
 
@@ -30,16 +30,17 @@ impl Prefab for UnitPrefab {
             })
             .collect::<Vec<_>>();
 
+        let texture: Handle<Image> = DEFAULT_IMAGE_HANDLE.typed();
+
         world
             .entity_mut(entity)
-            .insert_bundle(SpriteBundle {
-                sprite: Sprite {
-                    color: self.color.into(),
-                    custom_size: Some(size),
-                    ..default()
-                },
+            .insert(Sprite {
+                color: self.color.into(),
+                custom_size: Some(size),
                 ..default()
             })
+            .insert(texture)
+            .insert(Visibility::default())
             .insert(CollisionShape::Cuboid {
                 half_extends: size.extend(0.0) / 2.0,
                 border_radius: None,

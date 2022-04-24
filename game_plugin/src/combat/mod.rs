@@ -13,6 +13,8 @@ use bevy::{
 use bevy_inspector_egui::RegisterInspectable;
 use serde::de::DeserializeOwned;
 
+use crate::prefab::RegisterPrefab;
+
 use self::systems::*;
 pub use self::{components::*, events::*};
 
@@ -58,6 +60,7 @@ impl Plugin for CombatPlugin {
             .register_inspectable::<Loot>()
             .register_inspectable::<Health>();
         app.add_asset::<UnitPrefab>()
+            .register_prefab::<UnitPrefab>()
             .init_asset_loader::<RonLoader<UnitPrefab>>()
             .add_event::<EquipWeaponEvent>()
             .add_event::<ShootEvent>()

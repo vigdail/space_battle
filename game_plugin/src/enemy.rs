@@ -9,7 +9,6 @@ use crate::{
     despawn_with,
     loading::AssetsFolder,
     player::Player,
-    prefab::EntityPrefabCommands,
     states::GameState,
 };
 
@@ -164,7 +163,7 @@ fn spawn_enemy(
             .insert(RotationConstraints::lock())
             .insert(Enemy)
             .insert(movement)
-            .apply_prefab_handle(unit_handle)
+            .insert(unit_handle)
             .insert_bundle(TransformBundle::from_transform(
                 Transform::from_translation(position)
                     .with_rotation(Quat::from_rotation_z(180.0f32.to_radians())),

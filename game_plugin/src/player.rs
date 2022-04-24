@@ -7,7 +7,6 @@ use heron::prelude::*;
 
 use crate::{
     combat::{Health, Scores, ShootEvent, UnitPrefab},
-    prefab::EntityPrefabCommands,
     states::GameState,
 };
 
@@ -57,7 +56,7 @@ fn spawn_player(mut commands: Commands, asset_server: Res<AssetServer>) {
         })
         .insert(Player { speed: 200.0 })
         .insert(Scores::default())
-        .apply_prefab_handle(prefab_handle)
+        .insert(prefab_handle)
         .insert_bundle(TransformBundle::from_transform(Transform::from_xyz(
             0.0, -150.0, 0.0,
         )));
