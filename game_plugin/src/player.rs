@@ -6,7 +6,7 @@ use bevy_inspector_egui::{Inspectable, RegisterInspectable};
 use heron::prelude::*;
 
 use crate::{
-    combat::{Health, Scores, ShootEvent, WeaponSlotPrefab},
+    combat::{Health, Scores, ShootEvent, UnitPrefab},
     prefab::EntityPrefabCommands,
     states::GameState,
 };
@@ -39,8 +39,14 @@ impl Plugin for PlayerPlugin {
     }
 }
 
-fn spawn_player(mut commands: Commands) {
+fn spawn_player(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    assets: Res<Assets<UnitPrefab>>,
+) {
     let player_size = Vec2::splat(32.0);
+    let prefab_handle: Handle<UnitPrefab> = asset_server.get_handle("units/player.ron");
+    let prefab = assets.get(prefab_handle).cloned().unwrap();
     commands
         .spawn_bundle(SpriteBundle {
             sprite: Sprite {
@@ -63,32 +69,8 @@ fn spawn_player(mut commands: Commands) {
             ..default()
         })
         .insert(Player { speed: 200.0 })
-        .insert(Health::new(1))
-        .insert(Name::new("Player"))
         .insert(Scores::default())
-        .with_children(|parent| {
-            let slots = vec![
-                WeaponSlotPrefab {
-                    weapon: None,
-                    position: Vec2::new(0.0, 20.0),
-                    rotation: 90.0,
-                },
-                WeaponSlotPrefab {
-                    weapon: None,
-                    position: Vec2::new(15.0, 20.0),
-                    rotation: 90.0,
-                },
-                WeaponSlotPrefab {
-                    weapon: None,
-                    position: Vec2::new(-15.0, 20.0),
-                    rotation: 90.0,
-                },
-            ];
-
-            for slot in slots.iter() {
-                parent.spawn().apply_prefab(slot.clone());
-            }
-        });
+        .apply_prefab(prefab);
 }
 
 pub fn track_player_dead(

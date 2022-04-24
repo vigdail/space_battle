@@ -1,0 +1,16 @@
+ #![enable(implicit_some)]
+Unit(
+	name: "Player",
+	health: 3,
+	loot: (
+		score: 1,
+	),
+	color: (1.0, 0.0, 0.0),
+	weapon_slots: [
+		(
+			position: (0.0, 20.0), 
+			rotation: 90.0,
+		),
+	]
+)
+
