@@ -177,7 +177,7 @@ pub fn spawn_bullets(
                         custom_size: Some(size),
                         ..default()
                     },
-                    transform: transform.clone().into(),
+                    transform: (*transform).into(),
                     ..default()
                 })
                 .insert(Bullet { damage })

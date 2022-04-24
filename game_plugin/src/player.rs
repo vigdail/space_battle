@@ -39,24 +39,11 @@ impl Plugin for PlayerPlugin {
     }
 }
 
-fn spawn_player(
-    mut commands: Commands,
-    asset_server: Res<AssetServer>,
-    assets: Res<Assets<UnitPrefab>>,
-) {
+fn spawn_player(mut commands: Commands, asset_server: Res<AssetServer>) {
     let player_size = Vec2::splat(32.0);
     let prefab_handle: Handle<UnitPrefab> = asset_server.get_handle("units/player.ron");
-    let prefab = assets.get(prefab_handle).cloned().unwrap();
     commands
-        .spawn_bundle(SpriteBundle {
-            sprite: Sprite {
-                color: Color::RED,
-                custom_size: Some(player_size),
-                ..default()
-            },
-            transform: Transform::from_xyz(0.0, -150.0, 0.0),
-            ..default()
-        })
+        .spawn()
         .insert(RigidBody::Dynamic)
         .insert(CollisionShape::Cuboid {
             half_extends: player_size.extend(0.0) / 2.0,
@@ -70,7 +57,10 @@ fn spawn_player(
         })
         .insert(Player { speed: 200.0 })
         .insert(Scores::default())
-        .apply_prefab(prefab);
+        .apply_prefab_handle(prefab_handle)
+        .insert_bundle(TransformBundle::from_transform(Transform::from_xyz(
+            0.0, -150.0, 0.0,
+        )));
 }
 
 pub fn track_player_dead(

@@ -127,20 +127,22 @@ fn count_enemies(mut events: EventWriter<SpawnEnemyEvent>, enemies: Query<&Enemy
 fn spawn_enemy(
     mut commands: Commands,
     unit_handles: Res<AssetsFolder>,
-    units: Res<Assets<UnitPrefab>>,
     mut events: EventReader<SpawnEnemyEvent>,
 ) {
     let mut spawn = || {
         let mut rng = rand::thread_rng();
-        let unit_handle = unit_handles.units.choose(&mut rng).unwrap();
-        let unit = units.get(unit_handle).unwrap();
+        let unit_handle: Handle<UnitPrefab> = unit_handles
+            .units
+            .choose(&mut rng)
+            .cloned()
+            .unwrap()
+            .typed();
 
         let position = Vec3::new(
             random::<f32>() * 400.0 - 200.0,
             random::<f32>() * 200.0,
             0.0,
         );
-        let size = Vec2::splat(32.0);
 
         let movement = if random::<bool>() {
             Movement::Horizontal {
@@ -157,25 +159,16 @@ fn spawn_enemy(
         };
 
         commands
-            .spawn_bundle(SpriteBundle {
-                sprite: Sprite {
-                    color: unit.color.into(),
-                    custom_size: Some(size),
-                    ..default()
-                },
-                transform: Transform::from_translation(position)
-                    .with_rotation(Quat::from_rotation_z(180.0f32.to_radians())),
-                ..default()
-            })
+            .spawn()
             .insert(RigidBody::KinematicPositionBased)
-            .insert(CollisionShape::Cuboid {
-                half_extends: size.extend(0.0) / 2.0,
-                border_radius: None,
-            })
             .insert(RotationConstraints::lock())
             .insert(Enemy)
             .insert(movement)
-            .apply_prefab(unit.clone());
+            .apply_prefab_handle(unit_handle)
+            .insert_bundle(TransformBundle::from_transform(
+                Transform::from_translation(position)
+                    .with_rotation(Quat::from_rotation_z(180.0f32.to_radians())),
+            ));
     };
 
     for _ in events.iter() {

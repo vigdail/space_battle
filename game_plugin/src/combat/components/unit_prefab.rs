@@ -1,4 +1,5 @@
 use bevy::{prelude::*, reflect::TypeUuid};
+use heron::CollisionShape;
 use serde::{Deserialize, Serialize};
 
 use crate::prefab::Prefab;
@@ -18,6 +19,7 @@ pub struct UnitPrefab {
 
 impl Prefab for UnitPrefab {
     fn apply(&self, entity: Entity, world: &mut World) {
+        let size = Vec2::splat(32.0);
         let weapons = self
             .weapon_slots
             .iter()
@@ -30,6 +32,18 @@ impl Prefab for UnitPrefab {
 
         world
             .entity_mut(entity)
+            .insert_bundle(SpriteBundle {
+                sprite: Sprite {
+                    color: self.color.into(),
+                    custom_size: Some(size),
+                    ..default()
+                },
+                ..default()
+            })
+            .insert(CollisionShape::Cuboid {
+                half_extends: size.extend(0.0) / 2.0,
+                border_radius: None,
+            })
             .insert(Health::new(self.health))
             .insert(Name::new(self.name.clone()))
             .insert(self.loot.clone())
