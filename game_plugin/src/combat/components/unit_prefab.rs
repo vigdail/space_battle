@@ -1,9 +1,9 @@
 use bevy::{prelude::*, reflect::TypeUuid};
 use serde::{Deserialize, Serialize};
 
-use crate::prefab::{FromRaw, Prefab};
+use crate::prefab::Prefab;
 
-use super::{Health, Loot, WeaponSlot, WeaponSlotRaw, WeaponSlots};
+use super::{Health, Loot, WeaponSlotRaw};
 
 #[derive(Serialize, Deserialize, TypeUuid, Default, Clone)]
 #[uuid = "57f9ff4b-f4d1-4e51-9572-483113a861c9"]
@@ -18,22 +18,20 @@ pub struct UnitPrefab {
 
 impl Prefab for UnitPrefab {
     fn apply(&self, entity: Entity, world: &mut World) {
-        let slots = self
+        let weapons = self
             .weapon_slots
             .iter()
-            .map(|slot_raw| WeaponSlot::from_raw(slot_raw, world))
-            .collect::<Vec<_>>();
-
-        let weapons = slots
-            .iter()
-            .filter_map(|slot| slot.weapon)
+            .map(|slot| {
+                let entity = world.spawn().id();
+                slot.apply(entity, world);
+                entity
+            })
             .collect::<Vec<_>>();
 
         world
             .entity_mut(entity)
             .insert(Health::new(self.health))
             .insert(Name::new(self.name.clone()))
-            .insert(WeaponSlots { slots })
             .insert(self.loot.clone())
             .insert_children(0, &weapons);
     }

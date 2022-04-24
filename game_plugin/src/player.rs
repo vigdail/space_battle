@@ -6,7 +6,8 @@ use bevy_inspector_egui::{Inspectable, RegisterInspectable};
 use heron::prelude::*;
 
 use crate::{
-    combat::{Health, Scores, ShootEvent, WeaponSlot, WeaponSlots},
+    combat::{Health, Scores, ShootEvent, WeaponSlotRaw},
+    prefab::EntityPrefabCommands,
     states::GameState,
 };
 
@@ -64,26 +65,30 @@ fn spawn_player(mut commands: Commands) {
         .insert(Player { speed: 200.0 })
         .insert(Health::new(1))
         .insert(Name::new("Player"))
-        .insert(WeaponSlots {
-            slots: vec![
-                WeaponSlot {
+        .insert(Scores::default())
+        .with_children(|parent| {
+            let slots = vec![
+                WeaponSlotRaw {
                     weapon: None,
-                    transform: Transform::from_translation(Vec3::new(0.0, 20.0, 0.0))
-                        .with_rotation(Quat::from_rotation_z(90.0f32.to_radians())),
+                    position: Vec2::new(0.0, 20.0),
+                    rotation: 90.0,
                 },
-                WeaponSlot {
+                WeaponSlotRaw {
                     weapon: None,
-                    transform: Transform::from_translation(Vec3::new(-15.0, 20.0, 0.0))
-                        .with_rotation(Quat::from_rotation_z(90.0f32.to_radians())),
+                    position: Vec2::new(15.0, 20.0),
+                    rotation: 90.0,
                 },
-                WeaponSlot {
+                WeaponSlotRaw {
                     weapon: None,
-                    transform: Transform::from_translation(Vec3::new(15.0, 20.0, 0.0))
-                        .with_rotation(Quat::from_rotation_z(90.0f32.to_radians())),
+                    position: Vec2::new(-15.0, 20.0),
+                    rotation: 90.0,
                 },
-            ],
-        })
-        .insert(Scores::default());
+            ];
+
+            for slot in slots.iter() {
+                parent.spawn().apply_prefab(slot.clone());
+            }
+        });
 }
 
 pub fn track_player_dead(

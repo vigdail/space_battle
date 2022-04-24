@@ -43,9 +43,8 @@ where
 }
 
 pub struct EquipWeaponEvent {
-    pub entity: Entity,
-    pub weapon_entity: Entity,
-    pub slot_index: usize,
+    pub slot_entity: Entity,
+    pub weapon: Weapon,
 }
 
 pub struct CombatPlugin;
@@ -55,7 +54,6 @@ impl Plugin for CombatPlugin {
         #[cfg(feature = "debug")]
         app.register_inspectable::<Weapon>()
             .register_inspectable::<WeaponSlot>()
-            .register_inspectable::<WeaponSlots>()
             .register_inspectable::<Bullet>()
             .register_inspectable::<Loot>()
             .register_inspectable::<Health>();

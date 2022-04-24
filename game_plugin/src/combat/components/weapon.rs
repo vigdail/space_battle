@@ -6,7 +6,7 @@ use bevy::prelude::*;
 use bevy_inspector_egui::Inspectable;
 use serde::{Deserialize, Serialize};
 
-use crate::prefab::FromRaw;
+use crate::prefab::Prefab;
 
 #[cfg_attr(feature = "debug", derive(Inspectable))]
 #[derive(Debug, Default, Component)]
@@ -45,17 +45,14 @@ impl Weapon {
 }
 
 #[cfg_attr(feature = "debug", derive(Inspectable))]
-#[derive(Default, Clone)]
-pub struct WeaponSlot {
-    pub weapon: Option<Entity>,
-    pub transform: Transform,
-}
+#[derive(Default, Clone, Component)]
+pub struct WeaponSlot;
 
-#[cfg_attr(feature = "debug", derive(Inspectable))]
-#[derive(Component)]
-pub struct WeaponSlots {
-    pub slots: Vec<WeaponSlot>,
-}
+// #[cfg_attr(feature = "debug", derive(Inspectable))]
+// #[derive(Component)]
+// pub struct WeaponSlots {
+//     pub slots: Vec<WeaponSlot>,
+// }
 
 #[cfg_attr(feature = "debug", derive(Inspectable))]
 #[derive(Component)]
@@ -66,36 +63,32 @@ pub struct Bullet {
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename = "WeaponSlot")]
 pub struct WeaponSlotRaw {
-    pub weapon: Weapon,
+    pub weapon: Option<Weapon>,
     pub position: Vec2,
     pub rotation: f32,
 }
 
-impl FromRaw for WeaponSlot {
-    type Raw = WeaponSlotRaw;
-
-    fn from_raw(raw: &Self::Raw, world: &mut World) -> Self {
-        let transform = Transform::from_translation(raw.position.extend(0.0))
-            .with_rotation(Quat::from_rotation_z(raw.rotation.to_radians()));
-        let weapon = world
-            .spawn()
-            .insert_bundle(SpriteBundle {
-                sprite: Sprite {
-                    color: Color::GREEN,
-                    custom_size: Some(Vec2::splat(8.0)),
+impl Prefab for WeaponSlotRaw {
+    fn apply(&self, entity: Entity, world: &mut World) {
+        let transform = Transform::from_translation(self.position.extend(0.0))
+            .with_rotation(Quat::from_rotation_z(self.rotation.to_radians()));
+        let mut entity = world.entity_mut(entity);
+        if let Some(weapon) = self.weapon.clone() {
+            entity
+                .insert_bundle(SpriteBundle {
+                    sprite: Sprite {
+                        color: Color::GREEN,
+                        custom_size: Some(Vec2::splat(8.0)),
+                        ..default()
+                    },
                     ..default()
-                },
-                transform,
-                ..default()
-            })
-            .insert(Name::new("Weapon"))
-            .insert(raw.weapon.clone())
-            .insert(Cooldown::from_seconds(raw.weapon.cooldown()))
-            .id();
-
-        Self {
-            weapon: Some(weapon),
-            transform,
+                })
+                .insert(weapon.clone())
+                .insert(Cooldown::from_seconds(weapon.cooldown()));
         }
+        entity
+            .insert(Name::new("Weapon"))
+            .insert(WeaponSlot)
+            .insert_bundle(TransformBundle::from_transform(transform));
     }
 }

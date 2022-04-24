@@ -1,7 +1,5 @@
 use bevy::prelude::*;
 
-use super::components::WeaponSlot;
-
 // TODO: Which entity to reward
 pub struct RewardEvent {
     pub score: u32,
@@ -12,7 +10,7 @@ pub struct ShootEvent {
 }
 
 pub struct SpawnBulletEvent {
-    pub weapon_slot: WeaponSlot,
+    pub weapon: Entity,
     pub shooter: Entity,
 }
 

@@ -4,9 +4,9 @@ use heron::{prelude::*, SensorShape};
 use crate::{player::Player, Lifetime, Owner};
 
 use super::{
-    components::{Bullet, Cooldown, Health, Loot, Scores, Weapon, WeaponSlots},
+    components::{Bullet, Cooldown, Health, Loot, Scores, Weapon},
     events::{ContactEvent, RewardEvent, ShootEvent, SpawnBulletEvent},
-    EquipWeaponEvent,
+    EquipWeaponEvent, WeaponSlot,
 };
 
 pub fn handle_intersections(
@@ -85,40 +85,23 @@ pub fn update_cooldowns(time: Res<Time>, mut cooldowns: Query<&mut Cooldown>) {
 }
 
 pub fn test_equip_weapon(
-    mut commands: Commands,
     keyboard_input: Res<Input<KeyCode>>,
     mut events: EventWriter<EquipWeaponEvent>,
-    players: Query<(Entity, &WeaponSlots), With<Player>>,
+    players: Query<&Children, With<Player>>,
+    free_slots: Query<Entity, (With<WeaponSlot>, Without<Weapon>)>,
 ) {
     if keyboard_input.just_pressed(KeyCode::E) {
-        for (entity, slots) in players.iter() {
-            let slot_index = slots.slots.iter().position(|slot| slot.weapon.is_none());
-
-            if let Some(slot_index) = slot_index {
-                let weapon = Weapon::Laser {
-                    damage: 1,
-                    cooldown: 0.2,
-                };
-                let weapon_entity = commands
-                    .spawn()
-                    .insert_bundle(SpriteBundle {
-                        sprite: Sprite {
-                            color: Color::GREEN,
-                            custom_size: Some(Vec2::splat(8.0)),
-                            ..default()
-                        },
-                        visibility: Visibility { is_visible: false },
-                        ..default()
-                    })
-                    .insert(weapon.clone())
-                    .insert(Cooldown::from_seconds(weapon.cooldown()))
-                    .insert(Name::new(format!("Weapon {}", slot_index)))
-                    .id();
-
+        for children in players.iter() {
+            if let Some(slot_entity) = children
+                .iter()
+                .find_map(|child| free_slots.get(*child).ok())
+            {
                 events.send(EquipWeaponEvent {
-                    entity,
-                    weapon_entity,
-                    slot_index,
+                    slot_entity,
+                    weapon: Weapon::Laser {
+                        damage: 1,
+                        cooldown: 0.2,
+                    },
                 });
             }
         }
@@ -128,48 +111,43 @@ pub fn test_equip_weapon(
 pub fn equip_weapon(
     mut commands: Commands,
     mut events: EventReader<EquipWeaponEvent>,
-    mut slots: Query<&mut WeaponSlots>,
+    transforms: Query<&Transform>,
 ) {
     for event in events.iter() {
-        if let Ok(mut slots) = slots.get_mut(event.entity) {
-            if let Some(slot) = slots.slots.get_mut(event.slot_index) {
-                slot.weapon = Some(event.weapon_entity);
-                commands
-                    .entity(event.weapon_entity)
-                    .insert(Transform::from_xyz(
-                        slot.transform.translation.x,
-                        slot.transform.translation.y,
-                        0.0,
-                    ))
-                    .insert(Visibility { is_visible: true });
-                commands.entity(event.entity).add_child(event.weapon_entity);
-            }
-        }
+        let transform = transforms
+            .get(event.slot_entity)
+            .cloned()
+            .unwrap_or_default();
+        commands
+            .entity(event.slot_entity)
+            .insert_bundle(SpriteBundle {
+                sprite: Sprite {
+                    color: Color::GREEN,
+                    custom_size: Some(Vec2::splat(8.0)),
+                    ..default()
+                },
+                transform,
+                ..default()
+            })
+            .insert(event.weapon.clone())
+            .insert(Cooldown::from_seconds(event.weapon.cooldown()));
     }
 }
 
 pub fn handle_shoot_events(
     mut shoot_events: EventReader<ShootEvent>,
     mut spawn_bullet_events: EventWriter<SpawnBulletEvent>,
-    weapon_slots: Query<&WeaponSlots>,
-    weapons: Query<(&Weapon, &Cooldown)>,
+    children: Query<&Children>,
+    weapons: Query<(Entity, &Cooldown), With<Weapon>>,
 ) {
-    for ShootEvent { shooter } in shoot_events.iter() {
-        if let Ok(slots) = weapon_slots.get(*shooter) {
-            for weapon_slot in slots.slots.iter().filter(|slot| {
-                slot.weapon
-                    .and_then(|weapon| {
-                        weapons
-                            .get(weapon)
-                            .ok()
-                            .filter(|(_, cooldown)| cooldown.0.finished())
-                    })
-                    .is_some()
-            }) {
-                spawn_bullet_events.send(SpawnBulletEvent {
-                    weapon_slot: weapon_slot.clone(),
-                    shooter: *shooter,
-                });
+    for &ShootEvent { shooter } in shoot_events.iter() {
+        if let Ok(children) = children.get(shooter) {
+            for (weapon, _) in children
+                .iter()
+                .filter_map(|child| weapons.get(*child).ok())
+                .filter(|(_, cooldown)| cooldown.0.finished())
+            {
+                spawn_bullet_events.send(SpawnBulletEvent { weapon, shooter });
             }
         }
     }
@@ -178,22 +156,21 @@ pub fn handle_shoot_events(
 pub fn spawn_bullets(
     mut commands: Commands,
     mut events: EventReader<SpawnBulletEvent>,
-    mut weapons: Query<(&Weapon, &mut Cooldown, &GlobalTransform)>,
+    mut weapons: Query<(&Weapon, &mut Cooldown, &Transform, &GlobalTransform)>,
 ) {
     for SpawnBulletEvent {
-        weapon_slot,
+        weapon: weapon_entity,
         shooter,
     } in events.iter()
     {
-        if let Some((weapon, mut cooldown, global_transform)) = weapon_slot
-            .weapon
-            .and_then(|weapon_entity| weapons.get_mut(weapon_entity).ok())
+        if let Ok((weapon, mut cooldown, transform, global_transform)) =
+            weapons.get_mut(*weapon_entity)
         {
             cooldown.0.reset();
             let damage = weapon.damage();
             let size = Vec2::new(16.0, 8.0);
             let bullet_speed = 300.0;
-            let bullet_rotation = weapon_slot.transform.rotation;
+            let bullet_rotation = transform.rotation;
             let bullet_velocity = bullet_rotation.mul_vec3(Vec3::X * bullet_speed);
 
             commands
