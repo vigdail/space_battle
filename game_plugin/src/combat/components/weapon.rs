@@ -48,12 +48,6 @@ impl Weapon {
 #[derive(Default, Clone, Component)]
 pub struct WeaponSlot;
 
-// #[cfg_attr(feature = "debug", derive(Inspectable))]
-// #[derive(Component)]
-// pub struct WeaponSlots {
-//     pub slots: Vec<WeaponSlot>,
-// }
-
 #[cfg_attr(feature = "debug", derive(Inspectable))]
 #[derive(Component)]
 pub struct Bullet {
@@ -62,13 +56,13 @@ pub struct Bullet {
 
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename = "WeaponSlot")]
-pub struct WeaponSlotRaw {
+pub struct WeaponSlotPrefab {
     pub weapon: Option<Weapon>,
     pub position: Vec2,
     pub rotation: f32,
 }
 
-impl Prefab for WeaponSlotRaw {
+impl Prefab for WeaponSlotPrefab {
     fn apply(&self, entity: Entity, world: &mut World) {
         let transform = Transform::from_translation(self.position.extend(0.0))
             .with_rotation(Quat::from_rotation_z(self.rotation.to_radians()));

@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::prefab::Prefab;
 
-use super::{Health, Loot, WeaponSlotRaw};
+use super::{Health, Loot, WeaponSlotPrefab};
 
 #[derive(Serialize, Deserialize, TypeUuid, Default, Clone)]
 #[uuid = "57f9ff4b-f4d1-4e51-9572-483113a861c9"]
@@ -11,7 +11,7 @@ use super::{Health, Loot, WeaponSlotRaw};
 pub struct UnitPrefab {
     pub name: String,
     pub health: u32,
-    pub weapon_slots: Vec<WeaponSlotRaw>,
+    pub weapon_slots: Vec<WeaponSlotPrefab>,
     pub loot: Loot,
     pub color: [f32; 3],
 }

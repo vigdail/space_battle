@@ -11,7 +11,7 @@ mod states;
 
 use bevy::prelude::*;
 #[cfg(feature = "debug")]
-use bevy_inspector_egui::{Inspectable, RegisterInspectable};
+use bevy_inspector_egui::{Inspectable, RegisterInspectable, WorldInspectorPlugin};
 use heron::prelude::*;
 
 use combat::CombatPlugin;
@@ -39,10 +39,14 @@ pub struct GamePlugin;
 
 impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
-        #[cfg(feature = "debug")]
-        app.register_inspectable::<Owner>();
         app.add_state(GameState::Loading)
-            .add_plugin(PhysicsPlugin::default())
+            .add_plugins(DefaultPlugins);
+
+        #[cfg(feature = "debug")]
+        app.add_plugin(WorldInspectorPlugin::default())
+            .register_inspectable::<Owner>();
+
+        app.add_plugin(PhysicsPlugin::default())
             .add_plugin(LoadingPlugin)
             .add_plugin(MainMenuPlugin)
             .add_plugin(CountdownPlugin)

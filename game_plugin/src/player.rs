@@ -6,7 +6,7 @@ use bevy_inspector_egui::{Inspectable, RegisterInspectable};
 use heron::prelude::*;
 
 use crate::{
-    combat::{Health, Scores, ShootEvent, WeaponSlotRaw},
+    combat::{Health, Scores, ShootEvent, WeaponSlotPrefab},
     prefab::EntityPrefabCommands,
     states::GameState,
 };
@@ -68,17 +68,17 @@ fn spawn_player(mut commands: Commands) {
         .insert(Scores::default())
         .with_children(|parent| {
             let slots = vec![
-                WeaponSlotRaw {
+                WeaponSlotPrefab {
                     weapon: None,
                     position: Vec2::new(0.0, 20.0),
                     rotation: 90.0,
                 },
-                WeaponSlotRaw {
+                WeaponSlotPrefab {
                     weapon: None,
                     position: Vec2::new(15.0, 20.0),
                     rotation: 90.0,
                 },
-                WeaponSlotRaw {
+                WeaponSlotPrefab {
                     weapon: None,
                     position: Vec2::new(-15.0, 20.0),
                     rotation: 90.0,

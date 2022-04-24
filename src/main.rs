@@ -1,7 +1,5 @@
 use bevy::prelude::*;
 
-#[cfg(feature = "debug")]
-use bevy_inspector_egui::WorldInspectorPlugin;
 use game_plugin::GamePlugin;
 
 fn main() {
@@ -13,8 +11,6 @@ fn main() {
         ..default()
     })
     .insert_resource(ClearColor(Color::BLACK))
-    .add_plugins(DefaultPlugins);
-    #[cfg(feature = "debug")]
-    app.add_plugin(WorldInspectorPlugin::default());
-    app.add_plugin(GamePlugin).run();
+    .add_plugin(GamePlugin)
+    .run();
 }
