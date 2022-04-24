@@ -59,8 +59,8 @@ impl Plugin for CombatPlugin {
             .register_inspectable::<Bullet>()
             .register_inspectable::<Loot>()
             .register_inspectable::<Health>();
-        app.add_asset::<UnitRaw>()
-            .init_asset_loader::<RonLoader<UnitRaw>>()
+        app.add_asset::<UnitPrefab>()
+            .init_asset_loader::<RonLoader<UnitPrefab>>()
             .add_event::<EquipWeaponEvent>()
             .add_event::<ShootEvent>()
             .add_event::<SpawnBulletEvent>()

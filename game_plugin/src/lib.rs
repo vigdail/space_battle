@@ -6,6 +6,7 @@ mod game_ui;
 mod loading;
 mod main_menu;
 mod player;
+mod prefab;
 mod states;
 
 use bevy::prelude::*;

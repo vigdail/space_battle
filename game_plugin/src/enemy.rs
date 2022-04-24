@@ -5,10 +5,11 @@ use heron::prelude::*;
 use rand::{prelude::random, seq::SliceRandom};
 
 use crate::{
-    combat::{Cooldown, Health, ShootEvent, UnitRaw, WeaponSlot, WeaponSlots},
+    combat::{ShootEvent, UnitPrefab},
     despawn_with,
     loading::AssetsFolder,
     player::Player,
+    prefab::EntityPrefabCommands,
     states::GameState,
 };
 
@@ -126,7 +127,7 @@ fn count_enemies(mut events: EventWriter<SpawnEnemyEvent>, enemies: Query<&Enemy
 fn spawn_enemy(
     mut commands: Commands,
     unit_handles: Res<AssetsFolder>,
-    units: Res<Assets<UnitRaw>>,
+    units: Res<Assets<UnitPrefab>>,
     mut events: EventReader<SpawnEnemyEvent>,
 ) {
     let mut spawn = || {
@@ -140,35 +141,6 @@ fn spawn_enemy(
             0.0,
         );
         let size = Vec2::splat(32.0);
-
-        let (weapons, slots): (Vec<_>, Vec<_>) = unit
-            .weapon_slots
-            .iter()
-            .map(|slot_def| {
-                let weapon_entity = commands
-                    .spawn()
-                    .insert_bundle(SpriteBundle {
-                        sprite: Sprite {
-                            color: Color::GREEN,
-                            custom_size: Some(Vec2::splat(8.0)),
-                            ..default()
-                        },
-                        ..default()
-                    })
-                    .insert(slot_def.weapon.clone())
-                    .insert(Cooldown::from_seconds(slot_def.weapon.cooldown()))
-                    .insert(Name::new("Laser"))
-                    .insert(Transform::from_xyz(
-                        slot_def.position.x,
-                        slot_def.position.y,
-                        0.0,
-                    ))
-                    .id();
-
-                let weapon_slot = WeaponSlot::from_raw(slot_def, Some(weapon_entity));
-                (weapon_entity, weapon_slot)
-            })
-            .unzip();
 
         let movement = if random::<bool>() {
             Movement::Horizontal {
@@ -203,11 +175,7 @@ fn spawn_enemy(
             .insert(RotationConstraints::lock())
             .insert(Enemy)
             .insert(movement)
-            .insert(Health::new(unit.health))
-            .insert(Name::new(unit.name.clone()))
-            .insert(WeaponSlots { slots })
-            .insert(unit.loot.clone())
-            .insert_children(0, &weapons);
+            .apply_prefab(unit.clone());
     };
 
     for _ in events.iter() {
