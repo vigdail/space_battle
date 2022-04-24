@@ -111,10 +111,10 @@ fn setup_main_menu(mut commands: Commands, fonts: Res<FontAssets>) {
                 flex_direction: FlexDirection::ColumnReverse,
                 display: Display::None,
                 position_type: PositionType::Absolute,
-                ..Default::default()
+                ..default()
             },
             color: Color::NONE.into(),
-            ..Default::default()
+            ..default()
         })
         .with_children(|parent| {
             spawn_button(parent, "Start", MenuButtonTag::Start, font.clone());
@@ -137,10 +137,10 @@ fn spawn_button(parent: &mut ChildBuilder, text: &str, tag: MenuButtonTag, font:
                 },
                 justify_content: JustifyContent::Center,
                 align_items: AlignItems::Center,
-                ..Default::default()
+                ..default()
             },
             color: NORMAL_BUTTON.into(),
-            ..Default::default()
+            ..default()
         })
         .with_children(|button| {
             button.spawn_bundle(TextBundle {
@@ -153,7 +153,7 @@ fn spawn_button(parent: &mut ChildBuilder, text: &str, tag: MenuButtonTag, font:
                     },
                     Default::default(),
                 ),
-                ..Default::default()
+                ..default()
             });
         })
         .insert(tag);

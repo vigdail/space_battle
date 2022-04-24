@@ -44,10 +44,10 @@ fn setup_ui(mut commands: Commands, fonts: Res<FontAssets>) {
                 flex_direction: FlexDirection::ColumnReverse,
                 position_type: PositionType::Absolute,
                 display: Display::None,
-                ..Default::default()
+                ..default()
             },
             color: Color::NONE.into(),
-            ..Default::default()
+            ..default()
         })
         .insert(GameUITag)
         .insert(Name::new("Game UI"))
@@ -59,10 +59,10 @@ fn setup_ui(mut commands: Commands, fonts: Res<FontAssets>) {
                         flex_direction: FlexDirection::RowReverse,
                         align_items: AlignItems::FlexEnd,
                         padding: Rect::all(Val::Px(10.0)),
-                        ..Default::default()
+                        ..default()
                     },
                     color: Color::NONE.into(),
-                    ..Default::default()
+                    ..default()
                 })
                 .with_children(|parent| {
                     parent
@@ -79,7 +79,7 @@ fn setup_ui(mut commands: Commands, fonts: Res<FontAssets>) {
                                     horizontal: HorizontalAlign::Right,
                                 },
                             ),
-                            ..Default::default()
+                            ..default()
                         })
                         .insert(PlayerScoresText);
                 });

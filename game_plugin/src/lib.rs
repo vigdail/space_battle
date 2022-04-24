@@ -83,7 +83,7 @@ fn spawn_bounds(mut commands: Commands, window: Res<WindowDescriptor>) {
         commands
             .spawn_bundle(TransformBundle {
                 local: Transform::from_translation(position.extend(0.0)),
-                ..Default::default()
+                ..default()
             })
             .insert(RigidBody::Static)
             .insert(CollisionShape::Cuboid {
@@ -92,7 +92,7 @@ fn spawn_bounds(mut commands: Commands, window: Res<WindowDescriptor>) {
             })
             .insert(PhysicMaterial {
                 friction: 0.0,
-                ..Default::default()
+                ..default()
             })
             .insert(Name::new("Wall"));
     }

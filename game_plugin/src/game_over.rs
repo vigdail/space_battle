@@ -81,10 +81,10 @@ fn setup_ui(mut commands: Commands, fonts: Res<FontAssets>) {
                 justify_content: JustifyContent::Center,
                 display: Display::None,
                 position_type: PositionType::Absolute,
-                ..Default::default()
+                ..default()
             },
             color: Color::rgba(0.0, 0.0, 0.0, 0.5).into(),
-            ..Default::default()
+            ..default()
         })
         .insert(GameOverMenu)
         .insert(Name::new("Game Over UI"))
@@ -102,7 +102,7 @@ fn setup_ui(mut commands: Commands, fonts: Res<FontAssets>) {
                         horizontal: HorizontalAlign::Center,
                     },
                 ),
-                ..Default::default()
+                ..default()
             });
             parent
                 .spawn_bundle(TextBundle {
@@ -118,7 +118,7 @@ fn setup_ui(mut commands: Commands, fonts: Res<FontAssets>) {
                             horizontal: HorizontalAlign::Center,
                         },
                     ),
-                    ..Default::default()
+                    ..default()
                 })
                 .insert(ScoreText);
             parent
@@ -126,12 +126,12 @@ fn setup_ui(mut commands: Commands, fonts: Res<FontAssets>) {
                     style: Style {
                         padding: Rect {
                             top: Val::Px(20.0),
-                            ..Default::default()
+                            ..default()
                         },
-                        ..Default::default()
+                        ..default()
                     },
                     color: Color::NONE.into(),
-                    ..Default::default()
+                    ..default()
                 })
                 .with_children(|parent| {
                     spawn_button(parent, GameOverButton::Restart, fonts.font.clone());
@@ -148,14 +148,14 @@ fn spawn_button(parent: &mut ChildBuilder, tag: GameOverButton, font: Handle<Fon
                 margin: Rect {
                     left: Val::Px(10.0),
                     right: Val::Px(10.0),
-                    ..Default::default()
+                    ..default()
                 },
                 justify_content: JustifyContent::Center,
                 align_items: AlignItems::Center,
-                ..Default::default()
+                ..default()
             },
             color: NORMAL_BUTTON.into(),
-            ..Default::default()
+            ..default()
         })
         .with_children(|button| {
             button.spawn_bundle(TextBundle {
@@ -168,7 +168,7 @@ fn spawn_button(parent: &mut ChildBuilder, tag: GameOverButton, font: Handle<Fon
                     },
                     Default::default(),
                 ),
-                ..Default::default()
+                ..default()
             });
         })
         .insert(tag);

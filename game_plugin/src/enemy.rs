@@ -151,9 +151,9 @@ fn spawn_enemy(
                         sprite: Sprite {
                             color: Color::GREEN,
                             custom_size: Some(Vec2::splat(8.0)),
-                            ..Default::default()
+                            ..default()
                         },
-                        ..Default::default()
+                        ..default()
                     })
                     .insert(slot_def.weapon.clone())
                     .insert(Cooldown::from_seconds(slot_def.weapon.cooldown()))
@@ -189,11 +189,11 @@ fn spawn_enemy(
                 sprite: Sprite {
                     color: unit.color.into(),
                     custom_size: Some(size),
-                    ..Default::default()
+                    ..default()
                 },
                 transform: Transform::from_translation(position)
                     .with_rotation(Quat::from_rotation_z(180.0f32.to_radians())),
-                ..Default::default()
+                ..default()
             })
             .insert(RigidBody::KinematicPositionBased)
             .insert(CollisionShape::Cuboid {

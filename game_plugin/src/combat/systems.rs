@@ -105,10 +105,10 @@ pub fn test_equip_weapon(
                         sprite: Sprite {
                             color: Color::GREEN,
                             custom_size: Some(Vec2::splat(8.0)),
-                            ..Default::default()
+                            ..default()
                         },
                         visibility: Visibility { is_visible: false },
-                        ..Default::default()
+                        ..default()
                     })
                     .insert(weapon.clone())
                     .insert(Cooldown::from_seconds(weapon.cooldown()))
@@ -196,41 +196,16 @@ pub fn spawn_bullets(
             let bullet_rotation = weapon_slot.transform.rotation;
             let bullet_velocity = bullet_rotation.mul_vec3(Vec3::X * bullet_speed);
 
-            // let rigidbody = RigidBodyBundle {
-            //     velocity: RigidBodyVelocity {
-            //         linvel: bullet_velocity,
-            //         ..Default::default()
-            //     }
-            //     .into(),
-            //     forces: RigidBodyForces {
-            //         gravity_scale: 0.0,
-            //         ..Default::default()
-            //     }
-            //     .into(),
-            //     position: (
-            //         global_transform.translation.truncate(),
-            //         weapon_slot.transform.rotation.angle(),
-            //     )
-            //         .into(),
-            //     ..Default::default()
-            // };
-
-            // let collider = ColliderBundle {
-            //     collider_type: ColliderType::Sensor.into(),
-            //     shape: ColliderShape::cuboid(collider_size.x / 2.0, collider_size.y / 2.0).into(),
-            //     flags: (ActiveEvents::INTERSECTION_EVENTS).into(),
-            //     ..Default::default()
-            // };
             commands
                 .spawn_bundle(SpriteBundle {
                     sprite: Sprite {
                         color: Color::BLUE,
                         custom_size: Some(size),
-                        ..Default::default()
+                        ..default()
                     },
                     transform: Transform::from_translation(global_transform.translation)
                         .with_rotation(bullet_rotation),
-                    ..Default::default()
+                    ..default()
                 })
                 .insert(Bullet { damage })
                 .insert(Lifetime {

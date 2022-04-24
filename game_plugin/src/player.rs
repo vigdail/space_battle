@@ -45,10 +45,10 @@ fn spawn_player(mut commands: Commands) {
             sprite: Sprite {
                 color: Color::RED,
                 custom_size: Some(player_size),
-                ..Default::default()
+                ..default()
             },
             transform: Transform::from_xyz(0.0, -150.0, 0.0),
-            ..Default::default()
+            ..default()
         })
         .insert(RigidBody::Dynamic)
         .insert(CollisionShape::Cuboid {
@@ -59,7 +59,7 @@ fn spawn_player(mut commands: Commands) {
         .insert(RotationConstraints::lock())
         .insert(PhysicMaterial {
             friction: 0.0,
-            ..Default::default()
+            ..default()
         })
         .insert(Player { speed: 200.0 })
         .insert(Health::new(1))

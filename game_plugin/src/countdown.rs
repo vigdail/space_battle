@@ -53,10 +53,10 @@ fn spawn_ui(mut commands: Commands, fonts: Res<FontAssets>) {
                 flex_direction: FlexDirection::ColumnReverse,
                 position_type: PositionType::Absolute,
                 display: Display::None,
-                ..Default::default()
+                ..default()
             },
             color: Color::rgba(0.0, 0.0, 0.0, 0.5).into(),
-            ..Default::default()
+            ..default()
         })
         .with_children(|parent| {
             parent
@@ -72,9 +72,9 @@ fn spawn_ui(mut commands: Commands, fonts: Res<FontAssets>) {
                     ),
                     style: Style {
                         margin: Rect::all(Val::Auto),
-                        ..Default::default()
+                        ..default()
                     },
-                    ..Default::default()
+                    ..default()
                 })
                 .insert(CountdownText);
         })

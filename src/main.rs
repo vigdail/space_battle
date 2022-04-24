@@ -11,7 +11,7 @@ fn main() {
         width: 1280.0,
         height: 720.0,
         resizable: false,
-        ..Default::default()
+        ..default()
     })
     .insert_resource(ClearColor(Color::BLACK))
     .add_plugins(DefaultPlugins);
