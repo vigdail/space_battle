@@ -41,6 +41,7 @@ impl Plugin for GamePlugin {
         #[cfg(feature = "debug")]
         app.register_inspectable::<Owner>();
         app.add_state(GameState::Loading)
+            .add_plugin(PhysicsPlugin::default())
             .add_plugin(LoadingPlugin)
             .add_plugin(MainMenuPlugin)
             .add_plugin(CountdownPlugin)

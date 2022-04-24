@@ -4,7 +4,7 @@ name = "game_plugin"
 version = "0.1.0"
 
 [features]
-debug = ["bevy-inspector-egui"]
+debug = ["bevy-inspector-egui", "heron/debug-2d"]
 default = []
 
 [dependencies]
