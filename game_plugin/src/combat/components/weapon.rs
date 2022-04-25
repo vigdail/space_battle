@@ -25,24 +25,12 @@ impl From<f32> for Cooldown {
 }
 
 #[cfg_attr(feature = "debug", derive(Inspectable))]
+#[derive(Debug, Default, Component)]
+pub struct Damage(pub u32);
+
+#[cfg_attr(feature = "debug", derive(Inspectable))]
 #[derive(Component, Debug, Serialize, Deserialize, Clone)]
-pub enum Weapon {
-    Laser { damage: u32, cooldown: f32 },
-}
-
-impl Weapon {
-    pub fn damage(&self) -> u32 {
-        match self {
-            Weapon::Laser { damage, .. } => *damage,
-        }
-    }
-
-    pub fn cooldown(&self) -> f32 {
-        match self {
-            Weapon::Laser { cooldown, .. } => *cooldown,
-        }
-    }
-}
+pub struct Weapon;
 
 #[cfg_attr(feature = "debug", derive(Inspectable))]
 #[derive(Default, Clone, Component)]
@@ -54,11 +42,29 @@ pub struct Bullet {
     pub damage: u32,
 }
 
+#[cfg_attr(feature = "debug", derive(Inspectable))]
+#[derive(Component, Debug, Serialize, Deserialize, Clone, Copy)]
+pub enum BulletKind {
+    Laser,
+    Rocket,
+}
+
+impl BulletKind {
+    pub fn color(&self) -> Color {
+        match self {
+            BulletKind::Laser => Color::BLUE,
+            BulletKind::Rocket => Color::RED,
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Clone, TypeUuid)]
 #[uuid = "4825c543-fe54-4aec-82b8-5cbf413f3a88"]
 #[serde(rename = "Weapon")]
 pub struct WeaponPrefab {
-    weapon: Weapon,
+    pub bullet_kind: BulletKind,
+    pub damage: u32,
+    pub cooldown: f32,
 }
 
 impl Prefab for WeaponPrefab {
@@ -75,8 +81,10 @@ impl Prefab for WeaponPrefab {
                 },
                 ..default()
             })
-            .insert(self.weapon.clone())
-            .insert(Cooldown::from_seconds(self.weapon.cooldown()));
+            .insert(Damage(self.damage))
+            .insert(Weapon)
+            .insert(self.bullet_kind)
+            .insert(Cooldown::from_seconds(self.cooldown));
         if let Some(transform) = transform {
             entity.insert(transform);
         }

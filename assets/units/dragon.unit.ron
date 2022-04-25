@@ -8,8 +8,10 @@ Unit(
 	color: (0.7, 0.3, 0.7),
 	weapon_slots: [
 		(
-			weapon: Prefab((
-				weapon: Laser(damage: 1, cooldown: 1.0)
+			weapon: Prefab(Weapon(
+				bullet_kind: Laser,
+				damage: 1,
+				cooldown: 1.0,
 			)),
 			position: (0.0, 20.0), 
 			rotation: 90.0,

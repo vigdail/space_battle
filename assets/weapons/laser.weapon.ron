@@ -1,4 +1,6 @@
  #![enable(implicit_some)]
  Weapon(
-	 weapon: Laser(damage: 1, cooldown: 0.5)
+	bullet_kind: Laser,
+	damage: 1,
+	cooldown: 0.5,
  )

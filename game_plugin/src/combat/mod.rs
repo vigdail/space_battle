@@ -45,7 +45,7 @@ ron_loader!(WeaponLoader, WeaponPrefab, ["weapon.ron"]);
 
 pub struct EquipWeaponEvent {
     pub slot_entity: Entity,
-    pub weapon: Weapon,
+    pub weapon: WeaponPrefab,
 }
 
 pub struct CombatPlugin;

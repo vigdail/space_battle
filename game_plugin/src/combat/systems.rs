@@ -1,12 +1,12 @@
 use bevy::prelude::*;
 use heron::{prelude::*, SensorShape};
 
-use crate::{player::Player, Lifetime, Owner};
+use crate::{player::Player, prefab::EntityPrefabCommands, Lifetime, Owner};
 
 use super::{
     components::{Bullet, Cooldown, Health, Loot, Scores, Weapon},
     events::{ContactEvent, RewardEvent, ShootEvent, SpawnBulletEvent},
-    EquipWeaponEvent, WeaponSlot,
+    BulletKind, Damage, EquipWeaponEvent, WeaponPrefab, WeaponSlot,
 };
 
 pub fn handle_intersections(
@@ -98,9 +98,10 @@ pub fn test_equip_weapon(
             {
                 events.send(EquipWeaponEvent {
                     slot_entity,
-                    weapon: Weapon::Laser {
+                    weapon: WeaponPrefab {
                         damage: 1,
                         cooldown: 0.2,
+                        bullet_kind: BulletKind::Laser,
                     },
                 });
             }
@@ -129,8 +130,7 @@ pub fn equip_weapon(
                 transform,
                 ..default()
             })
-            .insert(event.weapon.clone())
-            .insert(Cooldown::from_seconds(event.weapon.cooldown()));
+            .apply_prefab(event.weapon.clone());
     }
 }
 
@@ -156,16 +156,16 @@ pub fn handle_shoot_events(
 pub fn spawn_bullets(
     mut commands: Commands,
     mut events: EventReader<SpawnBulletEvent>,
-    mut weapons: Query<(&Weapon, &mut Cooldown, &GlobalTransform)>,
+    mut weapons: Query<(&mut Cooldown, &GlobalTransform, Option<&Damage>), With<Weapon>>,
 ) {
     for SpawnBulletEvent {
         weapon: weapon_entity,
         shooter,
     } in events.iter()
     {
-        if let Ok((weapon, mut cooldown, transform)) = weapons.get_mut(*weapon_entity) {
+        if let Ok((mut cooldown, transform, damage)) = weapons.get_mut(*weapon_entity) {
             cooldown.0.reset();
-            let damage = weapon.damage();
+            let damage = damage.map(|damage| damage.0).unwrap_or(0);
             let size = Vec2::new(16.0, 8.0);
             let bullet_speed = 300.0;
             let bullet_velocity = transform.rotation.mul_vec3(Vec3::X * bullet_speed);
