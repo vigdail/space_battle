@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use bevy_asset_loader::{AssetCollection, AssetLoader};
 
 use crate::{
-    combat::{UnitPrefab, WeaponPrefab},
+    combat::{BulletPrefab, UnitPrefab, WeaponPrefab},
     states::GameState,
 };
 
@@ -38,4 +38,6 @@ pub struct AssetsFolder {
     pub units: Vec<Handle<UnitPrefab>>,
     #[asset(path = "weapons", folder(typed))]
     pub weapons: Vec<Handle<WeaponPrefab>>,
+    #[asset(path = "bullets", folder(typed))]
+    pub bullets: Vec<Handle<BulletPrefab>>,
 }

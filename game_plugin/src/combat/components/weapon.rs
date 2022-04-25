@@ -4,9 +4,10 @@ use bevy::{asset::Asset, prelude::*, reflect::TypeUuid};
 
 #[cfg(feature = "debug")]
 use bevy_inspector_egui::Inspectable;
+use heron::{CollisionShape, RigidBody, SensorShape};
 use serde::{Deserialize, Serialize};
 
-use crate::prefab::Prefab;
+use crate::{prefab::Prefab, Lifetime};
 
 #[cfg_attr(feature = "debug", derive(Inspectable))]
 #[derive(Debug, Default, Component)]
@@ -29,8 +30,10 @@ impl From<f32> for Cooldown {
 pub struct Damage(pub u32);
 
 #[cfg_attr(feature = "debug", derive(Inspectable))]
-#[derive(Component, Debug, Serialize, Deserialize, Clone)]
-pub struct Weapon;
+#[derive(Component, Debug, Clone)]
+pub struct Weapon {
+    pub bullet: Handle<BulletPrefab>,
+}
 
 #[cfg_attr(feature = "debug", derive(Inspectable))]
 #[derive(Default, Clone, Component)]
@@ -42,27 +45,11 @@ pub struct Bullet {
     pub damage: u32,
 }
 
-#[cfg_attr(feature = "debug", derive(Inspectable))]
-#[derive(Component, Debug, Serialize, Deserialize, Clone, Copy)]
-pub enum BulletKind {
-    Laser,
-    Rocket,
-}
-
-impl BulletKind {
-    pub fn color(&self) -> Color {
-        match self {
-            BulletKind::Laser => Color::BLUE,
-            BulletKind::Rocket => Color::RED,
-        }
-    }
-}
-
 #[derive(Serialize, Deserialize, Clone, TypeUuid)]
 #[uuid = "4825c543-fe54-4aec-82b8-5cbf413f3a88"]
 #[serde(rename = "Weapon")]
 pub struct WeaponPrefab {
-    pub bullet_kind: BulletKind,
+    pub bullet: PrefabAsset<BulletPrefab>,
     pub damage: u32,
     pub cooldown: f32,
 }
@@ -70,6 +57,7 @@ pub struct WeaponPrefab {
 impl Prefab for WeaponPrefab {
     fn apply(&self, entity: Entity, world: &mut World) {
         let transform = world.entity(entity).get::<Transform>().cloned();
+        let bullet_handle = self.bullet.as_handle(world);
 
         let mut entity = world.entity_mut(entity);
         entity
@@ -82,8 +70,9 @@ impl Prefab for WeaponPrefab {
                 ..default()
             })
             .insert(Damage(self.damage))
-            .insert(Weapon)
-            .insert(self.bullet_kind)
+            .insert(Weapon {
+                bullet: bullet_handle,
+            })
             .insert(Cooldown::from_seconds(self.cooldown));
         if let Some(transform) = transform {
             entity.insert(transform);
@@ -92,17 +81,29 @@ impl Prefab for WeaponPrefab {
 }
 
 #[derive(Serialize, Deserialize, Clone)]
-pub enum PrefabAsset<T: Prefab + Clone> {
+pub enum PrefabAsset<T: Clone> {
     Prefab(T),
     Asset(String),
 }
 
-impl<T: Prefab + Clone + Asset> PrefabAsset<T> {
+impl<T: Clone + Asset> PrefabAsset<T> {
     pub fn as_handle(&self, world: &mut World) -> Handle<T> {
         match self {
             PrefabAsset::Prefab(prefab) => world.resource_mut::<Assets<T>>().add(prefab.clone()),
             PrefabAsset::Asset(path) => world.resource::<AssetServer>().get_handle(path),
         }
+    }
+}
+
+impl<T: Prefab + Clone + Asset> From<T> for PrefabAsset<T> {
+    fn from(prefab: T) -> Self {
+        Self::Prefab(prefab)
+    }
+}
+
+impl<T: Prefab + Clone + Asset> From<String> for PrefabAsset<T> {
+    fn from(path: String) -> Self {
+        Self::Asset(path)
     }
 }
 
@@ -129,5 +130,41 @@ impl Prefab for WeaponSlotPrefab {
             .insert(Name::new("Weapon"))
             .insert(WeaponSlot)
             .insert_bundle(TransformBundle::from_transform(transform));
+    }
+}
+
+#[cfg_attr(feature = "debug", derive(Inspectable))]
+#[derive(Serialize, Deserialize, Clone, TypeUuid)]
+#[serde(rename = "Bullet")]
+#[uuid = "e6e66da1-8bdf-4972-be42-7fce4db7d07b"]
+pub struct BulletPrefab {
+    pub size: Vec2,
+    pub color: [f32; 3],
+}
+
+impl Prefab for BulletPrefab {
+    fn apply(&self, entity: Entity, world: &mut World) {
+        let transform = world.entity(entity).get::<Transform>().cloned().unwrap();
+
+        world
+            .entity_mut(entity)
+            .insert_bundle(SpriteBundle {
+                sprite: Sprite {
+                    custom_size: Some(self.size),
+                    color: self.color.into(),
+                    ..default()
+                },
+                transform,
+                ..default()
+            })
+            .insert(Lifetime {
+                timer: Timer::from_seconds(1.0, false),
+            })
+            .insert(RigidBody::KinematicVelocityBased)
+            .insert(SensorShape)
+            .insert(CollisionShape::Cuboid {
+                half_extends: self.size.extend(0.0) / 2.0,
+                border_radius: None,
+            });
     }
 }

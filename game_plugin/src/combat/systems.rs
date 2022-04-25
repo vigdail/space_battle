@@ -1,12 +1,12 @@
 use bevy::prelude::*;
-use heron::{prelude::*, SensorShape};
+use heron::prelude::*;
 
-use crate::{player::Player, prefab::EntityPrefabCommands, Lifetime, Owner};
+use crate::{player::Player, prefab::EntityPrefabCommands, Owner};
 
 use super::{
     components::{Bullet, Cooldown, Health, Loot, Scores, Weapon},
     events::{ContactEvent, RewardEvent, ShootEvent, SpawnBulletEvent},
-    BulletKind, Damage, EquipWeaponEvent, WeaponPrefab, WeaponSlot,
+    BulletPrefab, Damage, EquipWeaponEvent, WeaponPrefab, WeaponSlot,
 };
 
 pub fn handle_intersections(
@@ -101,7 +101,11 @@ pub fn test_equip_weapon(
                     weapon: WeaponPrefab {
                         damage: 1,
                         cooldown: 0.2,
-                        bullet_kind: BulletKind::Laser,
+                        bullet: BulletPrefab {
+                            size: Vec2::new(16.0, 8.0),
+                            color: [1.0, 0.5, 0.0],
+                        }
+                        .into(),
                     },
                 });
             }
@@ -156,40 +160,24 @@ pub fn handle_shoot_events(
 pub fn spawn_bullets(
     mut commands: Commands,
     mut events: EventReader<SpawnBulletEvent>,
-    mut weapons: Query<(&mut Cooldown, &GlobalTransform, Option<&Damage>), With<Weapon>>,
+    mut weapons: Query<(&Weapon, &mut Cooldown, &GlobalTransform, Option<&Damage>), With<Weapon>>,
 ) {
     for SpawnBulletEvent {
         weapon: weapon_entity,
         shooter,
     } in events.iter()
     {
-        if let Ok((mut cooldown, transform, damage)) = weapons.get_mut(*weapon_entity) {
+        if let Ok((weapon, mut cooldown, transform, damage)) = weapons.get_mut(*weapon_entity) {
             cooldown.0.reset();
             let damage = damage.map(|damage| damage.0).unwrap_or(0);
-            let size = Vec2::new(16.0, 8.0);
             let bullet_speed = 300.0;
             let bullet_velocity = transform.rotation.mul_vec3(Vec3::X * bullet_speed);
 
             commands
-                .spawn_bundle(SpriteBundle {
-                    sprite: Sprite {
-                        color: Color::BLUE,
-                        custom_size: Some(size),
-                        ..default()
-                    },
-                    transform: (*transform).into(),
-                    ..default()
-                })
+                .spawn()
+                .insert_bundle(TransformBundle::from_transform((*transform).into()))
+                .insert(weapon.bullet.clone())
                 .insert(Bullet { damage })
-                .insert(Lifetime {
-                    timer: Timer::from_seconds(1.0, false),
-                })
-                .insert(RigidBody::KinematicVelocityBased)
-                .insert(SensorShape)
-                .insert(CollisionShape::Cuboid {
-                    half_extends: size.extend(0.0) / 2.0,
-                    border_radius: None,
-                })
                 .insert(Velocity::from_linear(bullet_velocity))
                 .insert(Owner { entity: *shooter });
         }

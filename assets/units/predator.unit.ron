@@ -9,7 +9,7 @@ Unit(
 	weapon_slots: [
 		(
 			weapon: Prefab(Weapon(
-				bullet_kind: Rocket,
+				bullet: Asset("bullets/rocket.bullet.ron"),
 				damage: 1,
 				cooldown: 1.0,
 			)),
@@ -18,7 +18,7 @@ Unit(
 		),
 		(
 			weapon: Prefab(Weapon(
-				bullet_kind: Rocket,
+				bullet: Asset("bullets/rocket.bullet.ron"),
 				damage: 1,
 				cooldown: 1.0,
 			)),

@@ -1,6 +1,6 @@
  #![enable(implicit_some)]
  Weapon(
-	bullet_kind: Laser,
+	bullet: Asset("bullets/laser.bullet.ron"),
 	damage: 1,
 	cooldown: 0.5,
  )

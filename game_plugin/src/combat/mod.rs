@@ -43,6 +43,9 @@ ron_loader!(UnitLoader, UnitPrefab, ["unit.ron"]);
 pub struct WeaponLoader;
 ron_loader!(WeaponLoader, WeaponPrefab, ["weapon.ron"]);
 
+pub struct BulletLoader;
+ron_loader!(BulletLoader, BulletPrefab, ["bullet.ron"]);
+
 pub struct EquipWeaponEvent {
     pub slot_entity: Entity,
     pub weapon: WeaponPrefab,
@@ -60,8 +63,10 @@ impl Plugin for CombatPlugin {
             .register_inspectable::<Health>();
         app.register_prefab::<UnitPrefab>()
             .register_prefab::<WeaponPrefab>()
+            .register_prefab::<BulletPrefab>()
             .add_asset_loader(UnitLoader)
             .add_asset_loader(WeaponLoader)
+            .add_asset_loader(BulletLoader)
             .add_event::<EquipWeaponEvent>()
             .add_event::<ShootEvent>()
             .add_event::<SpawnBulletEvent>()
