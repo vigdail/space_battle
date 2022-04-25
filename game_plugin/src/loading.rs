@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bevy_asset_loader::{AssetCollection, AssetLoader};
 
-use crate::states::GameState;
+use crate::{combat::UnitPrefab, states::GameState};
 
 pub struct LoadingPlugin;
 
@@ -31,6 +31,6 @@ pub struct FontAssets {
 
 #[derive(AssetCollection)]
 pub struct AssetsFolder {
-    #[asset(path = "units", folder)]
-    pub units: Vec<HandleUntyped>,
+    #[asset(path = "units", folder(typed))]
+    pub units: Vec<Handle<UnitPrefab>>,
 }
