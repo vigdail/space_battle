@@ -131,6 +131,7 @@ fn spawn_enemy(
     let mut spawn = || {
         let mut rng = rand::thread_rng();
         let unit_handle: Handle<UnitPrefab> = unit_handles.units.choose(&mut rng).cloned().unwrap();
+        // let unit_handle: Handle<UnitPrefab> = unit_handles.units[2].clone();
 
         let position = Vec3::new(
             random::<f32>() * 400.0 - 200.0,

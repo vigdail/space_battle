@@ -40,7 +40,7 @@ impl Plugin for PlayerPlugin {
 
 fn spawn_player(mut commands: Commands, asset_server: Res<AssetServer>) {
     let player_size = Vec2::splat(32.0);
-    let prefab_handle: Handle<UnitPrefab> = asset_server.get_handle("units/player.ron");
+    let prefab_handle: Handle<UnitPrefab> = asset_server.get_handle("units/player.unit.ron");
     commands
         .spawn()
         .insert(RigidBody::Dynamic)
