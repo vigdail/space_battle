@@ -1,3 +1,4 @@
+mod audio;
 mod combat;
 mod countdown;
 mod enemy;
@@ -9,6 +10,7 @@ mod player;
 mod prefab;
 mod states;
 
+use audio::GameAudioPlugin;
 use bevy::prelude::*;
 #[cfg(feature = "debug")]
 use bevy_inspector_egui::{Inspectable, RegisterInspectable, WorldInspectorPlugin};
@@ -55,6 +57,7 @@ impl Plugin for GamePlugin {
             .add_plugin(CombatPlugin)
             .add_plugin(EnemyPlugin)
             .add_plugin(GameUiPlugin)
+            .add_plugin(GameAudioPlugin)
             .add_startup_system(spawn_bounds)
             .add_startup_system(spawn_cameras)
             .add_system(track_lifetime);

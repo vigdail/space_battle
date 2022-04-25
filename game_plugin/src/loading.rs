@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 use bevy_asset_loader::{AssetCollection, AssetLoader};
+use bevy_kira_audio::AudioSource;
 
 use crate::{combat::UnitPrefab, states::GameState};
 
@@ -33,4 +34,6 @@ pub struct FontAssets {
 pub struct AssetsFolder {
     #[asset(path = "units", folder(typed))]
     pub units: Vec<Handle<UnitPrefab>>,
+    #[asset(path = "sounds", folder(typed))]
+    pub sounds: Vec<Handle<AudioSource>>,
 }
