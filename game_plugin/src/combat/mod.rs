@@ -5,62 +5,43 @@ mod systems;
 use bevy::{
     asset::{AssetLoader, LoadedAsset},
     prelude::*,
-    reflect::TypeUuid,
 };
 #[cfg(feature = "debug")]
 use bevy_inspector_egui::RegisterInspectable;
-use serde::de::DeserializeOwned;
 
 use crate::prefab::RegisterPrefab;
 
 use self::systems::*;
 pub use self::{components::*, events::*};
 
-pub struct UnitLoader;
+#[macro_export]
+macro_rules! ron_loader {
+    ($loader:ident, $prefab:ident, [$($exts:expr), +]) => {
+        impl AssetLoader for $loader {
+            fn load<'a>(
+                &'a self,
+                bytes: &'a [u8],
+                load_context: &'a mut bevy::asset::LoadContext,
+            ) -> bevy::asset::BoxedFuture<'a, anyhow::Result<(), anyhow::Error>> {
+                Box::pin(async move {
+                    let custom_asset = ron::de::from_bytes::<$prefab>(bytes)?;
+                    load_context.set_default_asset(LoadedAsset::new(custom_asset));
+                    Ok(())
+                })
+            }
 
-impl AssetLoader for UnitLoader {
-    fn load<'a>(
-        &'a self,
-        bytes: &'a [u8],
-        load_context: &'a mut bevy::asset::LoadContext,
-    ) -> bevy::asset::BoxedFuture<'a, anyhow::Result<(), anyhow::Error>> {
-        load_ron::<UnitPrefab>(bytes, load_context)
-    }
-
-    fn extensions(&self) -> &[&str] {
-        &["unit.ron"]
-    }
+            fn extensions(&self) -> &[&str] {
+                &[$($exts),+]
+            }
+        }
+    };
 }
+
+pub struct UnitLoader;
+ron_loader!(UnitLoader, UnitPrefab, ["unit.ron"]);
 
 pub struct WeaponLoader;
-
-impl AssetLoader for WeaponLoader {
-    fn load<'a>(
-        &'a self,
-        bytes: &'a [u8],
-        load_context: &'a mut bevy::asset::LoadContext,
-    ) -> bevy::asset::BoxedFuture<'a, anyhow::Result<(), anyhow::Error>> {
-        load_ron::<WeaponPrefab>(bytes, load_context)
-    }
-
-    fn extensions(&self) -> &[&str] {
-        &["weapon.ron"]
-    }
-}
-
-fn load_ron<'a, T>(
-    bytes: &'a [u8],
-    load_context: &'a mut bevy::asset::LoadContext,
-) -> bevy::asset::BoxedFuture<'a, Result<(), anyhow::Error>>
-where
-    T: Send + Sync + DeserializeOwned + TypeUuid + 'static,
-{
-    Box::pin(async move {
-        let custom_asset = ron::de::from_bytes::<T>(bytes)?;
-        load_context.set_default_asset(LoadedAsset::new(custom_asset));
-        Ok(())
-    })
-}
+ron_loader!(WeaponLoader, WeaponPrefab, ["weapon.ron"]);
 
 pub struct EquipWeaponEvent {
     pub slot_entity: Entity,
@@ -77,9 +58,7 @@ impl Plugin for CombatPlugin {
             .register_inspectable::<Bullet>()
             .register_inspectable::<Loot>()
             .register_inspectable::<Health>();
-        app.add_asset::<UnitPrefab>()
-            .add_asset::<WeaponPrefab>()
-            .register_prefab::<UnitPrefab>()
+        app.register_prefab::<UnitPrefab>()
             .register_prefab::<WeaponPrefab>()
             .add_asset_loader(UnitLoader)
             .add_asset_loader(WeaponLoader)

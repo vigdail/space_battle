@@ -68,7 +68,7 @@ impl RegisterPrefab for App {
     where
         T: Prefab + Asset + Clone,
     {
-        self.add_system(apply_prefab_handle::<T>)
+        self.add_asset::<T>().add_system(apply_prefab_handle::<T>)
     }
 }
 
