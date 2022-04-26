@@ -49,7 +49,7 @@ pub struct Bullet {
 #[uuid = "4825c543-fe54-4aec-82b8-5cbf413f3a88"]
 #[serde(rename = "Weapon")]
 pub struct WeaponPrefab {
-    pub bullet: PrefabAsset<BulletPrefab>,
+    pub bullet: PrefabHandle<BulletPrefab>,
     pub damage: u32,
     pub cooldown: f32,
 }
@@ -81,27 +81,39 @@ impl Prefab for WeaponPrefab {
 }
 
 #[derive(Serialize, Deserialize, Clone)]
-pub enum PrefabAsset<T: Clone> {
+pub enum PrefabHandle<T: Clone> {
     Prefab(T),
     Asset(String),
 }
 
-impl<T: Clone + Asset> PrefabAsset<T> {
+impl<T: Clone + Asset> PrefabHandle<T> {
     pub fn as_handle(&self, world: &mut World) -> Handle<T> {
         match self {
-            PrefabAsset::Prefab(prefab) => world.resource_mut::<Assets<T>>().add(prefab.clone()),
-            PrefabAsset::Asset(path) => world.resource::<AssetServer>().get_handle(path),
+            PrefabHandle::Prefab(prefab) => world.resource_mut::<Assets<T>>().add(prefab.clone()),
+            PrefabHandle::Asset(path) => world.resource::<AssetServer>().get_handle(path),
         }
     }
 }
 
-impl<T: Prefab + Clone + Asset> From<T> for PrefabAsset<T> {
+impl<T: Clone + Asset + Prefab> Prefab for PrefabHandle<T> {
+    fn apply(&self, entity: Entity, world: &mut World) {
+        match self {
+            PrefabHandle::Prefab(prefab) => prefab.apply(entity, world),
+            PrefabHandle::Asset(path) => {
+                let handle: Handle<T> = world.resource::<AssetServer>().get_handle(path);
+                world.entity_mut(entity).insert(handle);
+            }
+        }
+    }
+}
+
+impl<T: Prefab + Clone + Asset> From<T> for PrefabHandle<T> {
     fn from(prefab: T) -> Self {
         Self::Prefab(prefab)
     }
 }
 
-impl<T: Prefab + Clone + Asset> From<String> for PrefabAsset<T> {
+impl<T: Prefab + Clone + Asset> From<String> for PrefabHandle<T> {
     fn from(path: String) -> Self {
         Self::Asset(path)
     }
@@ -110,7 +122,7 @@ impl<T: Prefab + Clone + Asset> From<String> for PrefabAsset<T> {
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename = "WeaponSlot")]
 pub struct WeaponSlotPrefab {
-    pub weapon: Option<PrefabAsset<WeaponPrefab>>,
+    pub weapon: Option<PrefabHandle<WeaponPrefab>>,
     pub position: Vec2,
     pub rotation: f32,
 }
@@ -120,12 +132,10 @@ impl Prefab for WeaponSlotPrefab {
         let transform = Transform::from_translation(self.position.extend(0.0))
             .with_rotation(Quat::from_rotation_z(self.rotation.to_radians()));
 
-        let weapon = self.weapon.as_ref().map(|weapon| weapon.as_handle(world));
-
-        let mut entity = world.entity_mut(entity);
-        if let Some(weapon) = weapon {
-            entity.insert(weapon);
+        if let Some(weapon) = &self.weapon {
+            weapon.apply(entity, world);
         }
+        let mut entity = world.entity_mut(entity);
         entity
             .insert(Name::new("Weapon"))
             .insert(WeaponSlot)
