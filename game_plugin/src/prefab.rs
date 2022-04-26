@@ -27,7 +27,7 @@ impl<T: Prefab> Prefab for Vec<T> {
             .iter()
             .map(|prefab| prefab.spawn(world))
             .collect::<Vec<_>>();
-        world.entity_mut(entity).insert_children(0, &children);
+        world.entity_mut(entity).push_children(&children);
     }
 }
 
