@@ -99,8 +99,8 @@ pub fn test_equip_weapon(
                 events.send(EquipWeaponEvent {
                     slot_entity,
                     weapon: WeaponPrefab {
-                        damage: 1,
-                        cooldown: 0.2,
+                        damage: Damage(1),
+                        cooldown: 0.2.into(),
                         bullet: BulletPrefab {
                             size: Vec2::new(16.0, 8.0),
                             color: [1.0, 0.5, 0.0],

@@ -2,7 +2,9 @@ use bevy::{
     asset::Asset,
     ecs::system::{Command, EntityCommands},
     prelude::*,
+    render::texture::DEFAULT_IMAGE_HANDLE,
 };
+use serde::{Deserialize, Serialize};
 
 pub trait FromRaw {
     type Raw;
@@ -10,12 +12,68 @@ pub trait FromRaw {
 }
 
 pub trait Prefab: Send + Sync + 'static {
-    fn spawn(&self, world: &mut World) {
+    fn spawn(&self, world: &mut World) -> Entity {
         let entity = world.spawn().id();
         self.apply(entity, world);
+        entity
     }
 
     fn apply(&self, entity: Entity, world: &mut World);
+}
+
+impl<T: Prefab> Prefab for Vec<T> {
+    fn apply(&self, entity: Entity, world: &mut World) {
+        let children = self
+            .iter()
+            .map(|prefab| prefab.spawn(world))
+            .collect::<Vec<_>>();
+        world.entity_mut(entity).insert_children(0, &children);
+    }
+}
+
+// impl<C: Component + Clone> Prefab for C {
+//     fn apply(&self, entity: Entity, world: &mut World) {
+//         world.entity_mut(entity).insert(self.clone());
+//     }
+// }
+
+#[derive(Serialize, Deserialize, Clone)]
+pub enum PrefabHandle<T> {
+    Prefab(T),
+    Asset(String),
+}
+
+impl<T: Clone + Asset> PrefabHandle<T> {
+    pub fn as_handle(&self, world: &mut World) -> Handle<T> {
+        match self {
+            PrefabHandle::Prefab(prefab) => world.resource_mut::<Assets<T>>().add(prefab.clone()),
+            PrefabHandle::Asset(path) => world.resource::<AssetServer>().get_handle(path),
+        }
+    }
+}
+
+impl<T: Asset + Prefab> Prefab for PrefabHandle<T> {
+    fn apply(&self, entity: Entity, world: &mut World) {
+        match self {
+            PrefabHandle::Prefab(prefab) => prefab.apply(entity, world),
+            PrefabHandle::Asset(path) => {
+                let handle: Handle<T> = world.resource::<AssetServer>().get_handle(path);
+                world.entity_mut(entity).insert(handle);
+            }
+        }
+    }
+}
+
+impl<T: Prefab> From<T> for PrefabHandle<T> {
+    fn from(prefab: T) -> Self {
+        Self::Prefab(prefab)
+    }
+}
+
+impl<T> From<String> for PrefabHandle<T> {
+    fn from(path: String) -> Self {
+        Self::Asset(path)
+    }
 }
 
 pub struct SpawnPrefab<T: Prefab> {
@@ -85,6 +143,46 @@ fn apply_prefab_handle<T>(
                 .entity(entity)
                 .apply_prefab(prefab.clone())
                 .remove::<Handle<T>>();
+        }
+    }
+}
+
+#[macro_export]
+macro_rules! prefab_loader {
+    ($loader:ident, $prefab:ident, [$($exts:expr), +]) => {
+        impl AssetLoader for $loader {
+            fn load<'a>(
+                &'a self,
+                bytes: &'a [u8],
+                load_context: &'a mut bevy::asset::LoadContext,
+            ) -> bevy::asset::BoxedFuture<'a, anyhow::Result<(), anyhow::Error>> {
+                Box::pin(async move {
+                    let custom_asset = ron::de::from_bytes::<$prefab>(bytes)?;
+                    load_context.set_default_asset(LoadedAsset::new(custom_asset));
+                    Ok(())
+                })
+            }
+
+            fn extensions(&self) -> &[&str] {
+                &[$($exts),+]
+            }
+        }
+    };
+}
+
+#[derive(Bundle)]
+pub struct SpriteBundle {
+    pub sprite: Sprite,
+    pub texture: Handle<Image>,
+    pub visibility: Visibility,
+}
+
+impl Default for SpriteBundle {
+    fn default() -> Self {
+        Self {
+            sprite: Default::default(),
+            texture: DEFAULT_IMAGE_HANDLE.typed(),
+            visibility: Default::default(),
         }
     }
 }

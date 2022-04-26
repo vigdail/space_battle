@@ -20,15 +20,6 @@ pub struct UnitPrefab {
 impl Prefab for UnitPrefab {
     fn apply(&self, entity: Entity, world: &mut World) {
         let size = Vec2::splat(32.0);
-        let weapons = self
-            .weapon_slots
-            .iter()
-            .map(|slot| {
-                let entity = world.spawn().id();
-                slot.apply(entity, world);
-                entity
-            })
-            .collect::<Vec<_>>();
 
         let texture: Handle<Image> = DEFAULT_IMAGE_HANDLE.typed();
 
@@ -47,7 +38,8 @@ impl Prefab for UnitPrefab {
             })
             .insert(Health::new(self.health))
             .insert(Name::new(self.name.clone()))
-            .insert(self.loot.clone())
-            .insert_children(0, &weapons);
+            .insert(self.loot.clone());
+
+        self.weapon_slots.apply(entity, world);
     }
 }

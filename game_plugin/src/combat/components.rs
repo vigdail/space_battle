@@ -1,3 +1,4 @@
+mod cooldown;
 mod unit_prefab;
 mod weapon;
 
@@ -7,7 +8,7 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "debug")]
 use bevy_inspector_egui::Inspectable;
 
-pub use self::{unit_prefab::*, weapon::*};
+pub use self::{cooldown::*, unit_prefab::*, weapon::*};
 
 #[cfg_attr(feature = "debug", derive(Inspectable))]
 #[derive(Debug, Default, Component)]

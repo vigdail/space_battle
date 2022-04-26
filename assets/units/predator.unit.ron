@@ -10,7 +10,7 @@ Unit(
 		(
 			weapon: Prefab(Weapon(
 				bullet: Asset("bullets/rocket.bullet.ron"),
-				damage: 1,
+				damage: Damage(1),
 				cooldown: 1.0,
 			)),
 			position: (5.0, 20.0), 
@@ -19,7 +19,7 @@ Unit(
 		(
 			weapon: Prefab(Weapon(
 				bullet: Asset("bullets/rocket.bullet.ron"),
-				damage: 1,
+				damage: Damage(1),
 				cooldown: 1.0,
 			)),
 			position: (-5.0, 20.0), 
