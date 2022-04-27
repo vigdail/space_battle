@@ -10,6 +10,7 @@ use crate::{
     loading::AssetsFolder,
     player::Player,
     states::GameState,
+    PhysicsLayers,
 };
 
 #[cfg_attr(feature = "debug", derive(Inspectable))]
@@ -131,7 +132,6 @@ fn spawn_enemy(
     let mut spawn = || {
         let mut rng = rand::thread_rng();
         let unit_handle: Handle<UnitPrefab> = unit_handles.units.choose(&mut rng).cloned().unwrap();
-        // let unit_handle: Handle<UnitPrefab> = unit_handles.units[2].clone();
 
         let position = Vec3::new(
             random::<f32>() * 400.0 - 200.0,
@@ -163,6 +163,10 @@ fn spawn_enemy(
             .insert_bundle(TransformBundle::from_transform(
                 Transform::from_translation(position)
                     .with_rotation(Quat::from_rotation_z(180.0f32.to_radians())),
+            ))
+            .insert(CollisionLayers::new(
+                PhysicsLayers::Enemy,
+                PhysicsLayers::Player,
             ));
     };
 

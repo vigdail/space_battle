@@ -13,7 +13,6 @@ pub fn handle_intersections(
     mut collision_events: EventReader<CollisionEvent>,
     bullets: Query<&Bullet>,
     healths: Query<&Health>,
-    owners: Query<&Owner>,
     mut contact_events: EventWriter<ContactEvent>,
 ) {
     for (data1, data2) in collision_events.iter().filter_map(|e| match e {
@@ -25,14 +24,7 @@ pub fn handle_intersections(
 
         let mut check_bullet = |health_entity, bullet_entity| {
             if healths.get(health_entity).is_ok() && bullets.get(bullet_entity).is_ok() {
-                let is_owner = owners
-                    .get(bullet_entity)
-                    .map(|owner| owner.entity == health_entity)
-                    .unwrap_or(false);
-
-                if !is_owner {
-                    contact_events.send(ContactEvent::HealthBullet(health_entity, bullet_entity));
-                }
+                contact_events.send(ContactEvent::HealthBullet(health_entity, bullet_entity));
             }
         };
 
@@ -57,7 +49,7 @@ pub fn handle_contacts(
                 {
                     health.current = health.current.saturating_sub(bullet.damage);
                 }
-                commands.entity(bullet_entity).despawn();
+                commands.entity(bullet_entity).despawn_recursive();
             }
         }
     }
@@ -161,25 +153,31 @@ pub fn spawn_bullets(
     mut commands: Commands,
     mut events: EventReader<SpawnBulletEvent>,
     mut weapons: Query<(&Weapon, &mut Cooldown, &GlobalTransform, Option<&Damage>), With<Weapon>>,
+    collision_layers: Query<&CollisionLayers>,
 ) {
-    for SpawnBulletEvent {
+    for &SpawnBulletEvent {
         weapon: weapon_entity,
         shooter,
     } in events.iter()
     {
-        if let Ok((weapon, mut cooldown, transform, damage)) = weapons.get_mut(*weapon_entity) {
+        if let Ok((weapon, mut cooldown, transform, damage)) = weapons.get_mut(weapon_entity) {
             cooldown.0.reset();
             let damage = damage.map(|damage| damage.0).unwrap_or(0);
             let bullet_speed = 300.0;
             let bullet_velocity = transform.rotation.mul_vec3(Vec3::X * bullet_speed);
 
-            commands
+            let bullet_entity = commands
                 .spawn()
                 .insert_bundle(TransformBundle::from_transform((*transform).into()))
                 .insert(weapon.bullet.clone())
                 .insert(Bullet { damage })
                 .insert(Velocity::from_linear(bullet_velocity))
-                .insert(Owner { entity: *shooter });
+                .insert(Owner { entity: shooter })
+                .id();
+
+            if let Ok(layers) = collision_layers.get(shooter) {
+                commands.entity(bullet_entity).insert(*layers);
+            }
         }
     }
 }

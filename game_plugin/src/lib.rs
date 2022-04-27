@@ -24,6 +24,12 @@ use main_menu::MainMenuPlugin;
 use player::PlayerPlugin;
 use states::GameState;
 
+#[derive(PhysicsLayer)]
+pub enum PhysicsLayers {
+    Player,
+    Enemy,
+}
+
 #[derive(Component)]
 #[cfg_attr(feature = "debug", derive(Inspectable))]
 pub struct Owner {

@@ -8,20 +8,12 @@ Unit(
 	color: (0.3, 0.3, 0.3),
 	weapon_slots: [
 		(
-			weapon: Prefab(Weapon(
-				bullet: Asset("bullets/rocket.bullet.ron"),
-				damage: Damage(1),
-				cooldown: 1.0,
-			)),
+			weapon: Asset("weapons/rocket_launcher.weapon.ron"),
 			position: (5.0, 20.0), 
 			rotation: 135.0,
 		),
 		(
-			weapon: Prefab(Weapon(
-				bullet: Asset("bullets/rocket.bullet.ron"),
-				damage: Damage(1),
-				cooldown: 1.0,
-			)),
+			weapon: Asset("weapons/rocket_launcher.weapon.ron"),
 			position: (-5.0, 20.0), 
 			rotation: 45.0,
 		),

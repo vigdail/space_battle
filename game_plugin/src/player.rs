@@ -8,6 +8,7 @@ use heron::prelude::*;
 use crate::{
     combat::{Health, Scores, ShootEvent, UnitPrefab},
     states::GameState,
+    PhysicsLayers,
 };
 
 #[cfg_attr(feature = "debug", derive(Inspectable))]
@@ -59,7 +60,11 @@ fn spawn_player(mut commands: Commands, asset_server: Res<AssetServer>) {
         .insert(prefab_handle)
         .insert_bundle(TransformBundle::from_transform(Transform::from_xyz(
             0.0, -150.0, 0.0,
-        )));
+        )))
+        .insert(CollisionLayers::new(
+            PhysicsLayers::Player,
+            PhysicsLayers::Enemy,
+        ));
 }
 
 pub fn track_player_dead(
