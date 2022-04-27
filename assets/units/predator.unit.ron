@@ -1,0 +1,34 @@
+ #![enable(implicit_some)]
+Unit(
+	name: "Predator",
+	health: 2,
+	loot: (
+		score: 3,
+	),
+	color: (0.3, 0.3, 0.3),
+	weapon_slots: [
+		(
+			weapon: Prefab(Weapon(
+				bullet: Asset("bullets/rocket.bullet.ron"),
+				damage: Damage(1),
+				cooldown: 1.0,
+			)),
+			position: (5.0, 20.0), 
+			rotation: 135.0,
+		),
+		(
+			weapon: Prefab(Weapon(
+				bullet: Asset("bullets/rocket.bullet.ron"),
+				damage: Damage(1),
+				cooldown: 1.0,
+			)),
+			position: (-5.0, 20.0), 
+			rotation: 45.0,
+		),
+		(
+			weapon: Asset("weapons/laser.weapon.ron"),
+			position: (0.0, 20.0), 
+			rotation: 90.0,
+		),
+	]
+)

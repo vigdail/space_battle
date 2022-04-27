@@ -8,17 +8,17 @@ Unit(
 	color: (1.0, 0.0, 0.0),
 	weapon_slots: [
 		(
-			weapon: Laser(damage: 1, cooldown: 1.0),
+			weapon: Asset("weapons/laser.weapon.ron"),
 			position: (0.0, 20.0), 
 			rotation: 90.0,
 		),
 		(
 			position: (-15.0, 20.0), 
 			rotation: 90.0,
-		),	(
+		),	
+		(
 			position: (15.0, 20.0), 
 			rotation: 90.0,
 		),
 	]
 )
-

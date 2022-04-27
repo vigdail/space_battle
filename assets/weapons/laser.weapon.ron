@@ -1,0 +1,7 @@
+ #![enable(implicit_some)]
+ #![enable(unwrap_newtypes)]
+ Weapon(
+	bullet: Asset("bullets/laser.bullet.ron"),
+	damage: 1,
+	cooldown: 0.5,
+ )

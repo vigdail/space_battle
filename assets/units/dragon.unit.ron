@@ -1,14 +1,14 @@
  #![enable(implicit_some)]
 Unit(
 	name: "Dragon",
-	health: 3,
+	health: 1,
 	loot: (
 		score: 1,
 	),
-	color: (0.7, 0.3, 0.2),
+	color: (0.7, 0.3, 0.7),
 	weapon_slots: [
 		(
-			weapon: Laser(damage: 1, cooldown: 1.0),
+			weapon: Asset("weapons/laser.weapon.ron"),
 			position: (0.0, 20.0), 
 			rotation: 90.0,
 		),

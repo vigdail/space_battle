@@ -1,0 +1,5 @@
+ #![enable(implicit_some)]
+Bullet(
+	size: (16.0, 8.0),
+	color: (1.0, 0.0, 0.0),
+)

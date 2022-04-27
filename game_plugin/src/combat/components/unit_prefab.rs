@@ -2,11 +2,14 @@ use bevy::{prelude::*, reflect::TypeUuid, render::texture::DEFAULT_IMAGE_HANDLE}
 use heron::CollisionShape;
 use serde::{Deserialize, Serialize};
 
-use crate::prefab::Prefab;
+use crate::{prefab::Prefab, prefab_loader};
 
 use super::{Health, Loot, WeaponSlotPrefab};
 
-#[derive(Serialize, Deserialize, TypeUuid, Default, Clone)]
+pub struct UnitLoader;
+prefab_loader!(UnitLoader, UnitPrefab, ["unit.ron"]);
+
+#[derive(Serialize, Deserialize, TypeUuid, Clone)]
 #[uuid = "57f9ff4b-f4d1-4e51-9572-483113a861c9"]
 #[serde(rename = "Unit")]
 pub struct UnitPrefab {
@@ -20,15 +23,6 @@ pub struct UnitPrefab {
 impl Prefab for UnitPrefab {
     fn apply(&self, entity: Entity, world: &mut World) {
         let size = Vec2::splat(32.0);
-        let weapons = self
-            .weapon_slots
-            .iter()
-            .map(|slot| {
-                let entity = world.spawn().id();
-                slot.apply(entity, world);
-                entity
-            })
-            .collect::<Vec<_>>();
 
         let texture: Handle<Image> = DEFAULT_IMAGE_HANDLE.typed();
 
@@ -47,7 +41,8 @@ impl Prefab for UnitPrefab {
             })
             .insert(Health::new(self.health))
             .insert(Name::new(self.name.clone()))
-            .insert(self.loot.clone())
-            .insert_children(0, &weapons);
+            .insert(self.loot.clone());
+
+        self.weapon_slots.apply(entity, world);
     }
 }
