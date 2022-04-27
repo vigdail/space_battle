@@ -2,9 +2,12 @@ use bevy::{prelude::*, reflect::TypeUuid, render::texture::DEFAULT_IMAGE_HANDLE}
 use heron::CollisionShape;
 use serde::{Deserialize, Serialize};
 
-use crate::prefab::Prefab;
+use crate::{prefab::Prefab, prefab_loader};
 
 use super::{Health, Loot, WeaponSlotPrefab};
+
+pub struct UnitLoader;
+prefab_loader!(UnitLoader, UnitPrefab, ["unit.ron"]);
 
 #[derive(Serialize, Deserialize, TypeUuid, Clone)]
 #[uuid = "57f9ff4b-f4d1-4e51-9572-483113a861c9"]

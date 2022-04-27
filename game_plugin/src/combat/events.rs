@@ -1,5 +1,7 @@
 use bevy::prelude::*;
 
+use super::WeaponPrefab;
+
 // TODO: Which entity to reward
 pub struct RewardEvent {
     pub score: u32,
@@ -16,4 +18,9 @@ pub struct SpawnBulletEvent {
 
 pub enum ContactEvent {
     HealthBullet(Entity, Entity),
+}
+
+pub struct EquipWeaponEvent {
+    pub slot_entity: Entity,
+    pub weapon: WeaponPrefab,
 }

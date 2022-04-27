@@ -150,7 +150,7 @@ fn apply_prefab_handle<T>(
 #[macro_export]
 macro_rules! prefab_loader {
     ($loader:ident, $prefab:ident, [$($exts:expr), +]) => {
-        impl AssetLoader for $loader {
+        impl bevy::asset::AssetLoader for $loader {
             fn load<'a>(
                 &'a self,
                 bytes: &'a [u8],
@@ -158,7 +158,7 @@ macro_rules! prefab_loader {
             ) -> bevy::asset::BoxedFuture<'a, anyhow::Result<(), anyhow::Error>> {
                 Box::pin(async move {
                     let custom_asset = ron::de::from_bytes::<$prefab>(bytes)?;
-                    load_context.set_default_asset(LoadedAsset::new(custom_asset));
+                    load_context.set_default_asset(bevy::asset::LoadedAsset::new(custom_asset));
                     Ok(())
                 })
             }

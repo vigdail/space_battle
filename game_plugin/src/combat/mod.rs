@@ -2,31 +2,14 @@ pub mod components;
 pub mod events;
 mod systems;
 
-use bevy::{
-    asset::{AssetLoader, LoadedAsset},
-    prelude::*,
-};
+use bevy::prelude::*;
 #[cfg(feature = "debug")]
 use bevy_inspector_egui::RegisterInspectable;
 
-use crate::{prefab::RegisterPrefab, prefab_loader};
+use crate::prefab::RegisterPrefab;
 
 use self::systems::*;
 pub use self::{components::*, events::*};
-
-pub struct UnitLoader;
-prefab_loader!(UnitLoader, UnitPrefab, ["unit.ron"]);
-
-pub struct WeaponLoader;
-prefab_loader!(WeaponLoader, WeaponPrefab, ["weapon.ron"]);
-
-pub struct BulletLoader;
-prefab_loader!(BulletLoader, BulletPrefab, ["bullet.ron"]);
-
-pub struct EquipWeaponEvent {
-    pub slot_entity: Entity,
-    pub weapon: WeaponPrefab,
-}
 
 pub struct CombatPlugin;
 

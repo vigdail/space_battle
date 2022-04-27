@@ -7,8 +7,14 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     prefab::{self, Prefab, PrefabHandle},
-    Lifetime,
+    prefab_loader, Lifetime,
 };
+
+pub struct WeaponLoader;
+prefab_loader!(WeaponLoader, WeaponPrefab, ["weapon.ron"]);
+
+pub struct BulletLoader;
+prefab_loader!(BulletLoader, BulletPrefab, ["bullet.ron"]);
 
 use super::Cooldown;
 
