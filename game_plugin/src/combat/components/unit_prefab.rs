@@ -1,8 +1,11 @@
-use bevy::{prelude::*, reflect::TypeUuid, render::texture::DEFAULT_IMAGE_HANDLE};
+use bevy::{prelude::*, reflect::TypeUuid};
 use heron::CollisionShape;
 use serde::{Deserialize, Serialize};
 
-use crate::{prefab::Prefab, prefab_loader};
+use crate::{
+    prefab::{self, Prefab},
+    prefab_loader,
+};
 
 use super::{Health, Loot, WeaponSlotPrefab};
 
@@ -17,24 +20,21 @@ pub struct UnitPrefab {
     pub health: u32,
     pub weapon_slots: Vec<WeaponSlotPrefab>,
     pub loot: Loot,
-    pub color: [f32; 3],
+    pub body: String,
 }
 
 impl Prefab for UnitPrefab {
     fn apply(&self, entity: Entity, world: &mut World) {
         let size = Vec2::splat(32.0);
 
-        let texture: Handle<Image> = DEFAULT_IMAGE_HANDLE.typed();
+        let texture: Handle<Image> = world.resource::<AssetServer>().load(&self.body);
 
         world
             .entity_mut(entity)
-            .insert(Sprite {
-                color: self.color.into(),
-                custom_size: Some(size),
+            .insert_bundle(prefab::SpriteBundle {
+                texture,
                 ..default()
             })
-            .insert(texture)
-            .insert(Visibility::default())
             .insert(CollisionShape::Cuboid {
                 half_extends: size.extend(0.0) / 2.0,
                 border_radius: None,

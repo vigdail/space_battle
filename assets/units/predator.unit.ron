@@ -5,12 +5,12 @@ Unit(
 	loot: (
 		score: 3,
 	),
-	color: (0.3, 0.3, 0.3),
+	body: "images/ships/ship3.png",
 	weapon_slots: [
 		(
 			weapon: Asset("weapons/rocket_launcher.weapon.ron"),
 			position: (5.0, 20.0), 
-			rotation: 135.0,
+			rotation: -45.0,
 		),
 		(
 			weapon: Asset("weapons/rocket_launcher.weapon.ron"),
@@ -20,7 +20,7 @@ Unit(
 		(
 			weapon: Asset("weapons/laser.weapon.ron"),
 			position: (0.0, 20.0), 
-			rotation: 90.0,
+			rotation: 0.0,
 		),
 	]
 )

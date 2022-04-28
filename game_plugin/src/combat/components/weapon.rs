@@ -53,14 +53,14 @@ impl Prefab for WeaponPrefab {
 
         let mut entity = world.entity_mut(entity);
         entity
-            .insert_bundle(prefab::SpriteBundle {
-                sprite: Sprite {
-                    color: Color::GREEN,
-                    custom_size: Some(Vec2::splat(8.0)),
-                    ..default()
-                },
-                ..default()
-            })
+            // .insert_bundle(prefab::SpriteBundle {
+            //     sprite: Sprite {
+            //         color: Color::GREEN,
+            //         custom_size: Some(Vec2::splat(8.0)),
+            //         ..default()
+            //     },
+            //     ..default()
+            // })
             .insert(self.damage.clone())
             .insert(Weapon {
                 bullet: bullet_handle,
@@ -99,19 +99,16 @@ impl Prefab for WeaponSlotPrefab {
 #[uuid = "e6e66da1-8bdf-4972-be42-7fce4db7d07b"]
 pub struct BulletPrefab {
     pub size: Vec2,
-    pub color: [f32; 3],
+    pub body: String,
 }
 
 impl Prefab for BulletPrefab {
     fn apply(&self, entity: Entity, world: &mut World) {
+        let texture = world.resource::<AssetServer>().load(&self.body);
         world
             .entity_mut(entity)
             .insert_bundle(prefab::SpriteBundle {
-                sprite: Sprite {
-                    custom_size: Some(self.size),
-                    color: self.color.into(),
-                    ..default()
-                },
+                texture,
                 ..default()
             })
             .insert(Lifetime {

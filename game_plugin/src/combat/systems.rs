@@ -94,8 +94,8 @@ pub fn test_equip_weapon(
                         damage: Damage(1),
                         cooldown: 0.2.into(),
                         bullet: BulletPrefab {
-                            size: Vec2::new(16.0, 8.0),
-                            color: [1.0, 0.5, 0.0],
+                            size: Vec2::new(5.0, 12.0),
+                            body: "images/bullets/bullet2.png".into(),
                         }
                         .into(),
                     },
@@ -117,15 +117,7 @@ pub fn equip_weapon(
             .unwrap_or_default();
         commands
             .entity(event.slot_entity)
-            .insert_bundle(SpriteBundle {
-                sprite: Sprite {
-                    color: Color::GREEN,
-                    custom_size: Some(Vec2::splat(8.0)),
-                    ..default()
-                },
-                transform,
-                ..default()
-            })
+            .insert_bundle(TransformBundle::from_transform(transform))
             .apply_prefab(event.weapon.clone());
     }
 }
@@ -164,7 +156,7 @@ pub fn spawn_bullets(
             cooldown.0.reset();
             let damage = damage.map(|damage| damage.0).unwrap_or(0);
             let bullet_speed = 300.0;
-            let bullet_velocity = transform.rotation.mul_vec3(Vec3::X * bullet_speed);
+            let bullet_velocity = transform.rotation.mul_vec3(Vec3::Y * bullet_speed);
 
             let bullet_entity = commands
                 .spawn()

@@ -7,7 +7,6 @@ use rand::{prelude::random, seq::SliceRandom};
 use crate::{
     combat::{ShootEvent, UnitPrefab},
     despawn_with,
-    loading::AssetsFolder,
     player::Player,
     states::GameState,
     PhysicsLayers,
@@ -126,12 +125,16 @@ fn count_enemies(mut events: EventWriter<SpawnEnemyEvent>, enemies: Query<&Enemy
 
 fn spawn_enemy(
     mut commands: Commands,
-    unit_handles: Res<AssetsFolder>,
+    asset_server: Res<AssetServer>,
     mut events: EventReader<SpawnEnemyEvent>,
 ) {
     let mut spawn = || {
         let mut rng = rand::thread_rng();
-        let unit_handle: Handle<UnitPrefab> = unit_handles.units.choose(&mut rng).cloned().unwrap();
+        // TODO
+        static ENEMIES: [&str; 2] = ["predator", "dragon"];
+        let choosen_enemy = ENEMIES.choose(&mut rng).cloned().unwrap();
+        let choosen_enemy = format!("units/{}.unit.ron", choosen_enemy);
+        let unit_handle: Handle<UnitPrefab> = asset_server.get_handle(choosen_enemy);
 
         let position = Vec3::new(
             random::<f32>() * 400.0 - 200.0,
@@ -149,7 +152,11 @@ fn spawn_enemy(
             Movement::circle(
                 Vec2::new(random::<f32>() * 100.0, random::<f32>() * 100.0),
                 random::<f32>() * 100.0 + 10.0,
-                RotationDir::Clockwise,
+                if random() {
+                    RotationDir::Clockwise
+                } else {
+                    RotationDir::CounterClockwise
+                },
             )
         };
 
