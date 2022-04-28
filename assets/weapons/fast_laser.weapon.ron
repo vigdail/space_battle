@@ -3,5 +3,5 @@
  Weapon(
 	bullet: Asset("bullets/laser.bullet.ron"),
 	damage: 1,
-	cooldown: 1.0,
+	cooldown: 0.5,
  )

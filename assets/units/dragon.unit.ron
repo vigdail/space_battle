@@ -10,7 +10,6 @@ Unit(
 		(
 			weapon: Asset("weapons/laser.weapon.ron"),
 			position: (0.0, 20.0), 
-			rotation: 0.0,
 		),
 	]
 )

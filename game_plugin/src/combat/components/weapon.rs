@@ -74,13 +74,14 @@ impl Prefab for WeaponPrefab {
 pub struct WeaponSlotPrefab {
     pub weapon: Option<PrefabHandle<WeaponPrefab>>,
     pub position: Vec2,
-    pub rotation: f32,
+    pub rotation: Option<f32>,
 }
 
 impl Prefab for WeaponSlotPrefab {
     fn apply(&self, entity: Entity, world: &mut World) {
-        let transform = Transform::from_translation(self.position.extend(0.0))
-            .with_rotation(Quat::from_rotation_z(self.rotation.to_radians()));
+        let transform = Transform::from_translation(self.position.extend(0.0)).with_rotation(
+            Quat::from_rotation_z(self.rotation.unwrap_or_default().to_radians()),
+        );
 
         if let Some(weapon) = &self.weapon {
             weapon.apply(entity, world);
