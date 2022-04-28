@@ -33,7 +33,9 @@ impl Plugin for MainMenuPlugin {
                 SystemSet::on_enter(GameState::MainMenu).with_system(show_ui::<MainMenuTag>),
             )
             .add_system_set(
-                SystemSet::on_update(GameState::MainMenu).with_system(handle_button_click),
+                SystemSet::on_update(GameState::MainMenu)
+                    .with_system(handle_button_click)
+                    .with_system(handle_keyboard),
             )
             .add_system_set(
                 SystemSet::on_exit(GameState::MainMenu).with_system(hide_ui::<MainMenuTag>),
@@ -77,6 +79,20 @@ fn handle_button_click(
                 MenuButtonTag::Exit => exit_events.send(AppExit),
             }
         }
+    }
+}
+
+fn handle_keyboard(
+    keyboard_input: Res<Input<KeyCode>>,
+    mut start_game_events: EventWriter<StartGameEvent>,
+    mut exit_events: EventWriter<AppExit>,
+) {
+    if keyboard_input.just_pressed(KeyCode::Return) {
+        start_game_events.send(StartGameEvent);
+    }
+
+    if keyboard_input.just_pressed(KeyCode::Escape) {
+        exit_events.send(AppExit);
     }
 }
 
